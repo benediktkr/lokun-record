@@ -1,6 +1,8 @@
 Lokun
 =======
 
+![Lokun](logo.png)
+
 Record is the bookeeping system. It recieves payments and keeps track of what
 users are allowed to connect and which are not. It hold the little customer 
 data we keep (no other information is stored by us about our customers). 
