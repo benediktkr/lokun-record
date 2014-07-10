@@ -15,6 +15,7 @@ Python packages needed
  * `BeautifulSoup`
  * `quopri`
  * `pycrypto`
+ * `webtest`
 
 Dependencies from apt:
 -----------------------------
