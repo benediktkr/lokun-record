@@ -16,7 +16,7 @@ Python packages needed
  * `quopri`
  * `pycrypto`
  * `webtest`
- * 
+ * `netaddr`
 
 Dependencies from apt:
 -----------------------------
