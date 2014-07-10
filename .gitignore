@@ -84,3 +84,6 @@ tramp
 
 # AUCTeX auto folder
 /auto/
+
+# lokun
+keyfile.txt
