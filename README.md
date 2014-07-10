@@ -1,11 +1,14 @@
-Lokun
+lokun-record
 =======
+
+This is `record`. It gets it's name as it is the "book-keeper" for lokun. It does a
+lot of things; authorizes or denies access to VPN servers, recieves payment, holds
+the little customer data we have (no other information is stored by us about our
+users).
 
 ![Lokun](logo.png)
 
-Record is the bookeeping system. It recieves payments and keeps track of what
-users are allowed to connect and which are not. It hold the little customer 
-data we keep (no other information is stored by us about our customers). 
+We believe in free software and thus `record` is licensed as AGPL. 
 
 Python packages needed
 ---------------------
@@ -49,3 +52,8 @@ prevent false replay messages from a user. Thus, it does not protect Lokun from
 a user potentially scamming a free VPN connection, but it protects users from
 DalPay, if they were served an injunction. 
 
+Maintainer
+====
+
+Main: Benedikt Kristinsson <benedikt@lokun.is>
+Karl Emil Kristinsosn <kalli@lokun.is>
