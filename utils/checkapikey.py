@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import sys
+sys.path.append("..")
 
 usage = """Checks an API key, reports the status to stdout
 

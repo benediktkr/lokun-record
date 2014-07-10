@@ -1,5 +1,6 @@
-from record import model
 import sys
+sys.path.append("..")
+from record import model
 
 usage = """Imports a list of bitcoin addresses from a file.
 

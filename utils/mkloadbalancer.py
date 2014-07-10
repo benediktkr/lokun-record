@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import sys
+sys.path.append("..")
 
 usage = """Inserts a new server to the loadbalancer table
 Uses the db specified in config.py. 

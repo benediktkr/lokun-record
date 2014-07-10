@@ -1,6 +1,7 @@
 #! /usr/bin/env python2
 # -*- coding: utf-8 -*-
 import sys
+sys.path.append("..")
 
 usage = """Creates a new invite key, registers it to db and prints it to stdout.
 Uses the db specified in config.py

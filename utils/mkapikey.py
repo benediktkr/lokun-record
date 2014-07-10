@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import sys
+sys.path.append("..")
 
 usage = """Creates a new API key, registers it to db as \"good\" aand prints it to stdout.
 Uses the db specified in config.py. 

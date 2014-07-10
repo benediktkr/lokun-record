@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import sys
+sys.path.append("..")
 
 usage = """Adds a new server to the load balancer and creates an
 API key for that server.
