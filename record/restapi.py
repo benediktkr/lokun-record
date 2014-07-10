@@ -228,7 +228,7 @@ def getallnodes():
 @post('/nodes/<name>')
 def postnode(name):
     node = node_auth(name)
-    heartbeat = time.time()
+    heartbeat = int(time.time())
     old_usercount = int(node.usercount)
     try:
         # coercing the types since sqlite doesn't give a shit

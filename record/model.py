@@ -7,6 +7,9 @@ from datetime import date, timedelta, datetime
 from subprocess import Popen, call
 from time import time
 
+from netaddr import IPAddress
+from netaddr.core import AddrFormatError
+
 import config
 import hashing
 import exchanges
@@ -52,13 +55,17 @@ class Node(object):
     def __init__(self, name, ip, **kwargs):
         self.name = name
         self.ip = ip
-        self.heartbeat = kwargs.get('heartbeat', 0)
-        self.selfcheck = kwargs.get('selfcheck', False)
         self.throughput = kwargs.get('throughput', 0)
         self.total_throughput = kwargs.get('total_throughput', 0)
         self._uptime = kwargs.get('uptime', '0d 0h')
         self.cpu = kwargs.get('cpu', 0.0)
         self._usercount = kwargs.get('usercount', 0)
+        # sqlite doesn't have bools
+        selfcheck = kwargs.get('selfcheck', False)
+        self.selfcheck = bool(selfcheck)
+        # Enforce int for hearbeat (time.time() returns a float)
+        heartbeat = kwargs.get('heartbeat', 0)
+        self.heartbeat = int(heartbeat)
         
     @classmethod
     def get(cls, name):
@@ -90,6 +97,10 @@ class Node(object):
         lb = cls.get(name)
         if lb:
             raise ValueError("Loadbalancer already exists")
+        try:
+            IPAddress(ip)
+        except AddrFormatError:
+            raise ValueError("ip")
         DB.get().lb_add(name, ip)
         return cls(name, ip)
 
@@ -296,7 +307,7 @@ class User(object):
         raise ValueError("Wrong username/password combination")
 
     @classmethod
-    def new(cls, username, passwd, invkey, email='', mkinstaller=True):
+    def new(cls, username, passwd, invkey=None, email='', mkinstaller=True):
         """Create a brand new user.
 
         Saves the new user to the database, creates a config.zip for him and
@@ -358,7 +369,7 @@ class InviteKey(object):
 
     @property
     def valid(self):
-        if self.special_key:
+        if self.promo_key:
             return True
         return DB.get().check_invite_key(self.key)
 
@@ -774,8 +785,9 @@ def mktables(conn):
                      usercount integer not null default 0,
                      heartbeat integer not null default 0,
                      selfcheck integer not null default 0,
-                     throughput integer not null default 0
+                     throughput integer not null default 0,
                      cpu real not null default 0.0,
-                     uptime text not null default '0d 0h')""")
+                     uptime text not null default '0d 0h',
+                     total_throughput integer not null default 0)""")
     c.execute("""create table paymentbot (
                      mailid int primary key)""")

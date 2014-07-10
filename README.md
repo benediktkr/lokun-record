@@ -16,6 +16,7 @@ Python packages needed
  * `quopri`
  * `pycrypto`
  * `webtest`
+ * 
 
 Dependencies from apt:
 -----------------------------
