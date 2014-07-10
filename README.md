@@ -1,10 +1,10 @@
 lokun-record
 =======
 
-This is `record`. It gets it's name as it is the "book-keeper" for lokun. It does a
-lot of things; authorizes or denies access to VPN servers, recieves payment, holds
-the little customer data we have (no other information is stored by us about our
-users).
+This is `record`. It gets it's name as it is the "book-keeper" for
+[Lokun](https://lokun.is). It does a lot of things; authorizes or denies users access
+to VPN servers, recieves payments, holds the little customer data we have (no other
+information is stored by us about our users).
 
 ![Lokun](logo.png)
 
