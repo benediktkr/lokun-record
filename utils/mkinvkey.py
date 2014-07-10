@@ -18,7 +18,7 @@ def main():
 		print usage
 		exit(1)
 
-	from .. import model
+	from record import model
 	ik = model.InviteKey.new()
 	print ik.key
 	exit(0)

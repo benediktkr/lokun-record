@@ -1,4 +1,4 @@
-import model
+from record import model
 import sys
 
 usage = """Imports a list of bitcoin addresses from a file.
