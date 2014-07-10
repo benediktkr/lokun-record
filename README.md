@@ -7,21 +7,21 @@ data we keep (no other information is stored by us about our customers).
 
 Python packages needed
 ---------------------
- * json
- * sqlite3
- * bottle
- * BeautifulSoup
- * quopri
- * pycrypto
+ * `json`
+ * `sqlite3`
+ * `bottle`
+ * `BeautifulSoup`
+ * `quopri`
+ * `pycrypto`
 
 Dependencies from apt:
 -----------------------------
- * python
- * python-pip
- * nsis 
- * openssl 
- * python-dev
- * build-essentials
+ * `python`
+ * `python-pip`
+ * `nsis`
+ * `openssl` 
+ * `python-dev`
+ * `build-essentials`
 
 DalPay crypto protocol
 ======
