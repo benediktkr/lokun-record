@@ -1,9 +1,11 @@
 #! /usr/bin/env python2
 # coding: utf8
+import sys
+sys.path.append("..")
 import unittest
 import os
 
-import dalpay
+from record import dalpay
 
 class TestDalPay(unittest.TestCase):
     def setUp(self):

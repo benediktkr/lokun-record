@@ -1,9 +1,11 @@
 #! /usr/bin/env python2
 # coding: utf8
+import sys
+sys.path.append("..")
 import unittest
 import os
 import random
-import encryption
+from record import encryption
 
 
 def verify_format(testcase, encrypted_msg):
