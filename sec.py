@@ -1,7 +1,17 @@
 from random import randint
 
 def compare(str1, str2):
-    return compare_const(str1, str2)
+    return compare_const2(str1, str2)
+
+def compare_const2(str1, str2):
+    if len(str1) != len(str2):
+        return False
+
+    result = 0
+    for x, y in zip(a, b):
+        result |= x ^ y
+    
+    return result == 0
 
 def compare_const(str1, str2):
     """Constant-time string comparasion, to avoid timing attacks.
