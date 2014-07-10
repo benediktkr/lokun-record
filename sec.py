@@ -8,8 +8,8 @@ def compare_const2(str1, str2):
         return False
 
     result = 0
-    for x, y in zip(a, b):
-        result |= x ^ y
+    for x, y in zip(str1, str2):
+        result |= ord(x) ^ ord(y)
     
     return result == 0
 
