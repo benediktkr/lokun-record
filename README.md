@@ -31,7 +31,7 @@ for implementing this protocol is to prevent disclosure of the username to
 DalPay (or any other payment processor for that matter), since DalPay have 
 the name, address and card number of a customer. 
 
-When a user initiates a DalPay transaction, a message is placed in the "user1" 
+When a user initiates a DalPay transaction, a message is placed in the `user1` 
 parameter sent to dalpay from `www.lokun.is`. This parameter is then included 
 in the callback that is sent to api.lokun.is. The message follows the following
  protocol:
