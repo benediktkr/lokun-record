@@ -20,7 +20,7 @@ def main():
         print usage
         sys.exit(1)
         
-    import model
+    from .. import model
     # No input checking
     name = sys.argv[1]
     ip = sys.argv[2]

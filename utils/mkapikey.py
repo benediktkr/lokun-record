@@ -20,7 +20,7 @@ def main():
                 sys.exit(1)
 
         name = sys.argv[1]
-	import model
+	from .. import model
 	apik = model.APIKey.new(name, "good")
 	print apik.key
 	exit(0)

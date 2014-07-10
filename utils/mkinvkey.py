@@ -18,7 +18,7 @@ def main():
 		print usage
 		exit(1)
 
-	import model
+	from .. import model
 	ik = model.InviteKey.new()
 	print ik.key
 	exit(0)

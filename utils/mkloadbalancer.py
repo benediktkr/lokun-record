@@ -19,7 +19,7 @@ def main():
                 sys.exit(1)
 
         name = sys.argv[1]
-	import model
+	from .. import model
         model.DB.get().lb_add(sys.argv[1], sys.argv[2])
 	exit(0)
 

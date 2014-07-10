@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import sys
 
-import model
+from .. import model
 
 usage = """Deposists ISK to a user. Prints out the users current credit_isk
 after deposit. 

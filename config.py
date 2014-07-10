@@ -7,7 +7,7 @@ sha512s_static_salt = 'omgitsatestingsalt'
 
 # db should be the filename of the sqlite db or 'testing' for a new unit test db
 #db = 'production.db'
-db = '/home/benedikt/projects/lokun/record/development.db'
+db = '/home/benedikt/projects/lokun-record/development.db'
 
 # Where client's keys and installers are stored. 
 #clients_dir = '/srv/clients'

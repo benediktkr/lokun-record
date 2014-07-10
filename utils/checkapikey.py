@@ -22,7 +22,7 @@ def main():
 
         key = sys.argv[1]
                 
-	import model
+	from .. import model
 	apik = model.APIKey.auth(key)
 	print apik
 	exit(0)
