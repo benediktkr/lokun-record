@@ -52,8 +52,9 @@ prevent false replay messages from a user. Thus, it does not protect Lokun from
 a user potentially scamming a free VPN connection, but it protects users from
 DalPay, if they were served an injunction. 
 
-Maintainer
+Maintainers 
 ====
 
 Main: Benedikt Kristinsson <benedikt@lokun.is>
-Karl Emil Kristinsosn <kalli@lokun.is>
+
+Karl Emil Karlsson <kalli@lokun.is>
