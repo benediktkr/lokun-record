@@ -52,6 +52,12 @@ prevent false replay messages from a user. Thus, it does not protect Lokun from
 a user potentially scamming a free VPN connection, but it protects users from
 DalPay, if they were served an injunction. 
 
+Other parts
+===
+
+Do note that this project depends on other parts of Lokun that are not included
+on github. These are `keycontrol` and `reikningar`. 
+
 Maintainers 
 ====
 
