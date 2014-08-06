@@ -53,6 +53,14 @@ def abort(status, text):
     r.status = status
     raise r
 
+def key_auth():
+    """Authenticates a API key."""
+    if not 'secret' in request.forms:
+        abort(401, "Must include a secret")
+    try:
+        return model.APIKey.auth(request.forms['secret'])
+    except ValueError as e:
+        abort(403, "Secret not accepted")    
 
 # ------------
 # /users/
@@ -139,17 +147,7 @@ def postusers():
 # -------------
 
 def vpn_auth():
-    """authorizes a node.
-
-    Used when:
-     - Reporting dl for a user or checking if sub_active
-     - Pull list of nodes (DNS, statuspage)"""
-    if not 'secret' in request.forms:
-        abort(401, "Must include a secret")
-    try:
-        return model.APIKey.auth(request.forms['secret'])
-    except ValueError as e:
-        abort(403, "Secret not accepted")    
+    return key_auth()
 
 @post('/vpn/<name>/sub')
 def vpn_sub(name):
@@ -279,14 +277,6 @@ def putnode(name):
 # ---------------
 # /lokun/
 # ---------------
-@get('/lokun')
-def lokun():
-    return {'loadbalancer': loadbalancer(),
-            'exits': exits(),
-            'connected': connected(),
-            'price': price(),
-            'status': status()}
-
 @get('/lokun/loadbalancer')
 def loadbalancer():
     try:
