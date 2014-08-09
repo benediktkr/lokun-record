@@ -80,17 +80,12 @@ class Node(object):
 
     @classmethod
     def auth(cls, name, key):
-        apikey = APIKey.auth(key)
-        if apikey:
-            node = cls.get(name)
-            if not node:
-                raise ValueError("Not a VPN server")
-            # Check if the VPN node as assigned to the key it claimed. 
-            # This is for correctness much more than it is done for security.
-            if name != apikey.name:
-                raise ValueError("Invalid name/key combination")
-            return node
-        raise ValueError("Invalid key/name combination")
+        apikey = APIKey.auth(key, name=name)
+        node = cls.get(name)
+        if not node:
+            raise ValueError("Not a VPN server")
+        return node
+
     
     @classmethod
     def new(cls, name, ip):
@@ -101,8 +96,9 @@ class Node(object):
             IPAddress(ip)
         except AddrFormatError:
             raise ValueError("ip")
-        DB.get().lb_add(name, ip)
-        return cls(name, ip)
+        newnode = cls(name, ip)
+        newnode.save()
+        return newnode
 
     @classmethod
     def exists(cls, name):

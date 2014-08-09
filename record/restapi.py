@@ -53,12 +53,12 @@ def abort(status, text):
     r.status = status
     raise r
 
-def key_auth():
+def key_auth(name=""):
     """Authenticates a API key."""
     if not 'secret' in request.forms:
         abort(401, "Must include a secret")
     try:
-        return model.APIKey.auth(request.forms['secret'])
+        return model.APIKey.auth(request.forms['secret'], name="")
     except ValueError as e:
         abort(403, "Secret not accepted")    
 
@@ -146,9 +146,6 @@ def postusers():
 # /vpn/
 # -------------
 
-def vpn_auth():
-    return key_auth()
-
 @post('/vpn/<name>/sub')
 def vpn_sub(name):
     """Check if sub is active, try to buy if not. 
@@ -157,7 +154,7 @@ def vpn_sub(name):
     connections and have used bandwidth that will not be reported
     until they disconnect.
     """
-    node = vpn_auth()
+    keyinfo = key_auth()
     user = model.User.get(name)
     if not user:
         # Since the API requires keys, this is okay.
@@ -169,21 +166,21 @@ def vpn_sub(name):
         extra = 0
 
     if user.sub_active and user.dl_left > extra:
-        log("VPN access granted for a user on ({0})".format(node.name))
+        log("VPN access granted for a user on ({0})".format(keyinfo.name))
         return {'sub_status': 'True',
                 'updated': 'False'}
     elif user.buy_sub()+1 > 0:
         user.save()
-        log("VPN access granted and charged for a user ({0})".format(node.name))
+        log("VPN access granted and charged for a user ({0})".format(keyinfo.name))
         return {'sub_status': 'True',
                 'updated': 'True'}
     else:
-        log("VPN access denied for a user ({0})".format(node.name))
+        log("VPN access denied for a user ({0})".format(keyinfo.name))
         return {'sub_status': 'False'}
 
 @post('/vpn/<name>/report')
 def vpn_report(name):
-    node = vpn_auth()
+    keyinfo= key_auth()
     user = model.User.get(name)
     if not 'dl' in request.forms:
         abort(400, "Must include dl")
@@ -192,7 +189,7 @@ def vpn_report(name):
         abort(400, "dl must be >= 0")
     user.dl_left = user.dl_left - dl
     user.save()
-    log("Report for a user recieved (user disconnected from {0})".format(node.name))
+    log("Report for a user recieved (user disconnected from {0})".format(keinfo.name))
     return {}
 
 #----------
@@ -212,7 +209,7 @@ def node_auth(name):
 
 @post('/nodes')
 def getallnodes():
-    vpn_auth()
+    key_auth()
     nodelist = model.Node.getall()
     nodes = lambda nl: [dict(node) for node in nl]
     
@@ -266,7 +263,7 @@ def putnode(name):
     else:
         try:
             node = model.Node.new(name, request.forms["ip"])
-            apikey = model.APIKey.new(name, "new")
+            apikey = model.APIKey.new(name, status="new")
             log("Created a new node. API key status set to 'new'")
             return dict({'secret': apikey.key}, **dict(node))
         except ValueError as e:

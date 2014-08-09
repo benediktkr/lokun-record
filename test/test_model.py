@@ -44,7 +44,7 @@ class TestNode(unittest.TestCase):
 
     def tearDown(self):
         os.remove(DB_NAME)
-
+        
     def test_bad_new_node(self):
         model.Node.new("samenode", "1.1.1.1")
         self.assertRaises(ValueError, model.Node.new, "samenode", "1.1.1.2")
@@ -59,6 +59,14 @@ class TestNode(unittest.TestCase):
         testnode.save()
         getnode = model.Node.get("save")
         self.compare(testnode, getnode)
+
+    def test_node_and_key(self):
+        testnode = model.Node.new('keynode', "1.1.1.1")
+        testkey = model.APIKey.new("keynode", status="new")
+        self.assertRaises(ValueError, model.Node.auth, "keynode", testkey.key)
+        testkey.status = "good"
+        testkey.save()
+        model.Node.auth("keynode", testkey.key)
 
     def test_node_update_save(self):
         updatenode = model.Node.new('save', "1.1.1.1")
