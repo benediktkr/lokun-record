@@ -471,7 +471,7 @@ class APIKey(object):
         return cls(key, name, status)
         
     @classmethod
-    def auth(cls, key, name="", overkill=True):
+    def auth(cls, key, name=""):
         """Authorize this key."""
         apikey = cls.get(key)
         if apikey.good and (name == apikey.name or not name):
