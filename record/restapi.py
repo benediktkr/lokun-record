@@ -58,7 +58,7 @@ def key_auth(name=""):
     if not 'secret' in request.forms:
         abort(401, "Must include a secret")
     try:
-        return model.APIKey.auth(request.forms['secret'], name="")
+        return model.APIKey.auth(request.forms['secret'], name=name)
     except ValueError as e:
         abort(403, "Secret not accepted")    
 
