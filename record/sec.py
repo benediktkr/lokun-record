@@ -1,5 +1,8 @@
 from random import randint
 
+def compare1toN(str1, strl):
+    return any([compare(str1, a) for a in strl])
+
 def compare(str1, str2):
     return compare_const2(str1, str2)
 

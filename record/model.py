@@ -80,17 +80,12 @@ class Node(object):
 
     @classmethod
     def auth(cls, name, key):
-        apikey = APIKey.auth(key)
-        if apikey:
-            node = cls.get(name)
-            if not node:
-                raise ValueError("Not a VPN server")
-            # Check if the VPN node as assigned to the key it claimed. 
-            # This is for correctness much more than it is done for security.
-            if name != apikey.name:
-                raise ValueError("Invalid name/key combination")
-            return node
-        raise ValueError("Invalid key/name combination")
+        apikey = APIKey.auth(key, name=name)
+        node = cls.get(name)
+        if not node:
+            raise ValueError("Not a VPN server")
+        return node
+
     
     @classmethod
     def new(cls, name, ip):
@@ -101,8 +96,9 @@ class Node(object):
             IPAddress(ip)
         except AddrFormatError:
             raise ValueError("ip")
-        DB.get().lb_add(name, ip)
-        return cls(name, ip)
+        newnode = cls(name, ip)
+        newnode.save()
+        return newnode
 
     @classmethod
     def exists(cls, name):
@@ -438,10 +434,7 @@ class BTCAddr(object):
         DB.get().rm_btc_addr(self.addr)
 
 class APIKey(object):
-    """Randomly generated keys to access the API.
-
-    The name isn't used to authenticate nor is it there for
-    security reasons. It's there """
+    """Randomly generated keys to access in restapi.py"""
     def __init__(self, key, name, status):
         self.key = key
         self.name = name
@@ -454,42 +447,36 @@ class APIKey(object):
         attrs.append(("status", self.status))
         return attrs
 
+    def save(self):
+        DB.get().save_api_key(self.key, self.name, self.status)
+
+    @property
+    def good(self):
+        return self.status == "good"
+
     @classmethod
     def new(cls, name, status="good"):
         """Create new api keys."""
         key = hashing.gen_randhex_sha256()
-        DB.get().add_api_key(key, name, status)
-        return cls(key, name, status)
+        newkey = cls(key, name, status)
+        newkey.save()
+        return newkey
 
     @classmethod
     def get(cls, key):
         row = DB.get().get_api_key(key)
         if not row:
-            return False
-        key, status, name = row
+            return cls(key, None, "error")
+        key, name, status = row
         return cls(key, name, status)
         
     @classmethod
-    def auth(cls, key):
+    def auth(cls, key, name=""):
         """Authorize this key."""
-
         apikey = cls.get(key)
-        if apikey and sec.compare(key, apikey.key) and apikey.status == "good":
+        if apikey.good and (name == apikey.name or not name):
             return apikey
         raise ValueError("APIKey not accepted")
-
-    @classmethod
-    def get_name(cls, key):
-        """ Returns name if key is found
-            Else return False
-
-        NOTE: Lookup function, ignores status.
-        use auth() for authentication.
-
-        But you can use this value to do authorization
-        AFTER authentication. 
-        """
-        return DB.get().api_key_name(key)
 
 # --- Password and security ---------------------------------------------------
 
@@ -591,10 +578,21 @@ class DB(object):
         result = c.fetchone()
         return False if not result else result[0]
 
+    def get_all_api_keys(self):
+        sql = "select key, name, status from apikeys"
+        c = self.conn.execute(sql)
+        return c.fetchall()
+
     def get_api_key(self, key):
-        sql = "select key, status, name from apikeys where key = ?"
+        sql = "select key, name, status from apikeys where key = ?"
         c = self.conn.execute(sql, (key, ))
-        return c.fetchone()
+        result = c.fetchone()
+        return result
+        
+    def save_api_key(self, key, name, status):
+        sql = "insert or replace into apikeys(key, name, status) values(?, ?, ?)"
+        self.conn.execute(sql, (key, name, status))
+        self.commit()
 
     def add_invite_key(self, key):
         self.conn.execute("insert into invitekey values (?)", (key,))
