@@ -438,10 +438,7 @@ class BTCAddr(object):
         DB.get().rm_btc_addr(self.addr)
 
 class APIKey(object):
-    """Randomly generated keys to access the API.
-
-    The name isn't used to authenticate nor is it there for
-    security reasons. It's there """
+    """Randomly generated keys to access in restapi.py"""
     def __init__(self, key, name, status):
         self.key = key
         self.name = name
@@ -454,6 +451,14 @@ class APIKey(object):
         attrs.append(("status", self.status))
         return attrs
 
+    def __eq__(self, other):
+        print "sec.compare(self.key, other.key)"
+        return sec.compare(self.key, other.key)
+
+    @property
+    def good(self):
+        return self.status == "good"
+
     @classmethod
     def new(cls, name, status="good"):
         """Create new api keys."""
@@ -465,31 +470,18 @@ class APIKey(object):
     def get(cls, key):
         row = DB.get().get_api_key(key)
         if not row:
-            return False
+            return cls(key, None, None)
         key, status, name = row
         return cls(key, name, status)
         
     @classmethod
-    def auth(cls, key):
+    def auth(cls, key, name=""):
         """Authorize this key."""
 
         apikey = cls.get(key)
-        if apikey and sec.compare(key, apikey.key) and apikey.status == "good":
+        if key == apikey and apikey.good:
             return apikey
         raise ValueError("APIKey not accepted")
-
-    @classmethod
-    def get_name(cls, key):
-        """ Returns name if key is found
-            Else return False
-
-        NOTE: Lookup function, ignores status.
-        use auth() for authentication.
-
-        But you can use this value to do authorization
-        AFTER authentication. 
-        """
-        return DB.get().api_key_name(key)
 
 # --- Password and security ---------------------------------------------------
 
