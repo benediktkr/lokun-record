@@ -451,9 +451,8 @@ class APIKey(object):
         attrs.append(("status", self.status))
         return attrs
 
-    def __eq__(self, other):
-        print "sec.compare(self.key, other.key)"
-        return sec.compare(self.key, other.key)
+    def save(self):
+        DB.get().save_api_key(self.key, self.name, self.status)
 
     @property
     def good(self):
@@ -463,23 +462,23 @@ class APIKey(object):
     def new(cls, name, status="good"):
         """Create new api keys."""
         key = hashing.gen_randhex_sha256()
-        DB.get().add_api_key(key, name, status)
-        return cls(key, name, status)
+        newkey = cls(key, name, status)
+        newkey.save()
+        return newkey
 
     @classmethod
     def get(cls, key):
         row = DB.get().get_api_key(key)
         if not row:
-            return cls(key, None, None)
-        key, status, name = row
+            return cls(key, None, "error")
+        key, name, status = row
         return cls(key, name, status)
         
     @classmethod
-    def auth(cls, key, name=""):
+    def auth(cls, key, name="", overkill=True):
         """Authorize this key."""
-
         apikey = cls.get(key)
-        if key == apikey and apikey.good:
+        if apikey.good and (name == apikey.name or not name):
             return apikey
         raise ValueError("APIKey not accepted")
 
@@ -583,10 +582,21 @@ class DB(object):
         result = c.fetchone()
         return False if not result else result[0]
 
+    def get_all_api_keys(self):
+        sql = "select key, name, status from apikeys"
+        c = self.conn.execute(sql)
+        return c.fetchall()
+
     def get_api_key(self, key):
-        sql = "select key, status, name from apikeys where key = ?"
+        sql = "select key, name, status from apikeys where key = ?"
         c = self.conn.execute(sql, (key, ))
-        return c.fetchone()
+        result = c.fetchone()
+        return result
+        
+    def save_api_key(self, key, name, status):
+        sql = "insert or replace into apikeys(key, name, status) values(?, ?, ?)"
+        self.conn.execute(sql, (key, name, status))
+        self.commit()
 
     def add_invite_key(self, key):
         self.conn.execute("insert into invitekey values (?)", (key,))

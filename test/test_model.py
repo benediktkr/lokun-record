@@ -7,6 +7,7 @@ import os
 
 from record import model
 from record import config
+from record import hashing
 
 
 DB_NAME = '/tmp/testing.db'
@@ -169,6 +170,58 @@ class TestInviteKey(unittest.TestCase):
         self.assertFalse(k.valid)
         self.assertRaises(ValueError, k.use)
 
+
+class TestAPIKey(unittest.TestCase):
+    def verify(self, testkey, key, name, status):
+            self.assertEquals(testkey.key, key)
+            self.assertEquals(testkey.name, name)
+            self.assertEquals(testkey.status, status)
+            self.assertIs(type(testkey.key), str)
+            self.assertIs(type(testkey.name), str)
+            self.assertIs(type(testkey.status), str)
+
+    def compare(self, key1, key2):
+        self.verify(key1, key2.key, key2.name, key2.status)
+
+    def setUp(self):
+        model.new_db(DB_NAME)
+        config.db = DB_NAME
+        self.alwaysvalid = model.APIKey.new("validkey")
+        model.APIKey.new("revokedkey", status="revoked")
+
+    def tearDown(self):
+        os.remove(DB_NAME)
+
+    def test_alwaysvalid(self):
+        authed = model.APIKey.auth(self.alwaysvalid.key)
+        # also test with name
+        model.APIKey.auth(self.alwaysvalid.key, "validkey")
+        self.verify(self.alwaysvalid, authed.key, authed.name, authed.status)
+
+    def test_bad_key(self):
+        for _ in xrange(20):
+            rndkey = hashing.gen_randhex_sha256()
+            self.assertRaises(ValueError, model.APIKey.auth, rndkey)
+
+    def test_new_good_key(self):
+        testkey = model.APIKey.new("goodtestkey", status="good")
+        authed = model.APIKey.auth(testkey.key)
+        self.verify(testkey, authed.key, authed.name, authed.status)
+
+    def test_new_revoked_key(self):
+        testkey = model.APIKey.new("revokedtestkey", status="revoked")
+        self.assertRaises(ValueError, model.APIKey.auth, testkey.key)
+
+    def test_revoking_new_key(self):
+        testkey = model.APIKey.new("revokeme", status="good")
+        authed = model.APIKey.auth(testkey.key)
+        # also test with name
+        model.APIKey.auth(testkey.key, "revokeme")
+        self.verify(testkey, authed.key, authed.name, authed.status)
+        testkey.status = "revoked"
+        testkey.save()
+        self.assertRaises(ValueError, model.APIKey.auth, testkey.key)
+        
 
 if __name__ == '__main__':
     unittest.main()
