@@ -1,5 +1,7 @@
 #! /usr/bin/env python2
 # coding: utf8
+import sys
+sys.path.append("..")
 import unittest
 
 import hashing
