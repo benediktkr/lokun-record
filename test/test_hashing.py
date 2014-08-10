@@ -4,8 +4,7 @@ import sys
 sys.path.append("..")
 import unittest
 
-import hashing
-
+from record import hashing
 
 def verify_format(testcase, hashed_passwd):
     testcase.assertEqual(len(hashed_passwd.split('$')), 3)
