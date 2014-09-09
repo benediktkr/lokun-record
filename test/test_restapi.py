@@ -8,14 +8,17 @@ in git.
 Pretty badly written but meh, I was half-asleep.
 """
 
+import sys
+sys.path.append("..")
+
 import unittest
 import os
 
 from webtest import TestApp
 
-import restapi
-import model
-import config
+from record import restapi
+from record import model
+from record import config
 
 
 DB_NAME = '/tmp/testing.db'
