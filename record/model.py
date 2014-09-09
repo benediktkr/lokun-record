@@ -21,7 +21,7 @@ SUB_LENGTH_DAYS = 30
 # TODO: This variable now also exists in config
 SUB_PRICE_ISK = config.isk_price
 
-class NotEnoughFunds(Exception):
+class NotEnoughFundsError(Exception):
     pass
 
 class NodeList(list):
@@ -225,39 +225,32 @@ class User(object):
 
     def buy_sub(self):
         """Attempts to buy the user some subscription. First tries to use
-        credit_btc, then credit_isk."""
+        credit_btc, then credit_isk. Raises NotEnoughFundsException"""
 
-        btc_left = self.buy_sub_btc()
-        if btc_left+1 > 0:
-            return btc_left
-        return self.buy_sub_isk()
+        b = self.buy_sub_btc() or self.buy_sub_isk()
+        if not b:
+            raise NotEnoughFundsError
+        
+        sub_end_date = date.today() + timedelta(SUB_LENGTH_DAYS)
+        self.sub_end = sub_end_date.isoformat()
+        if self.dl_left < 0:
+            self.dl_left = self.dl_left + SUB_DL_BYTES
+        else:
+            self.dl_left = SUB_DL_BYTES
+
 
     def buy_sub_isk(self):
-        """Returns isk_credit left or -1 if not enough."""
         if self.credit_isk < SUB_PRICE_ISK:
-            return -1
-        if self.dl_left < 0:
-            self.dl_left = self.dl_left + SUB_DL_BYTES
-        else:
-            self.dl_left = SUB_DL_BYTES
-        sub_end_date = date.today() + timedelta(SUB_LENGTH_DAYS)
-        self.sub_end = sub_end_date.isoformat()
+            return False
         self.credit_isk = self.credit_isk - SUB_PRICE_ISK
-        return self.credit_isk
+        return True
 
     def buy_sub_btc(self):
-        """Returns btc_credit left or -1 if not enough"""
         price = exchanges.btc_price()
         if self.credit_btc < price:
-            return -1
-        if self.dl_left < 0:
-            self.dl_left = self.dl_left + SUB_DL_BYTES
-        else:
-            self.dl_left = SUB_DL_BYTES
-        sub_end_date = date.today() + timedelta(SUB_LENGTH_DAYS)
-        self.sub_end = sub_end_date.isoformat()
+            return False
         self.credit_btc = self.credit_btc - price
-        return self.credit_btc
+        return True
 
     def set_passwd(self, passwd):
         """Sets a new password from plain text."""
