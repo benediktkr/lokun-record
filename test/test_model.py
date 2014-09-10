@@ -16,6 +16,8 @@ DB_NAME = '/tmp/testing.db'
 def mock_noop(*args, **kwargs):
     pass
 
+def mock_false(*args, **kwargs):
+    return False
 
 class TestNode(unittest.TestCase):
     def verify(self, testnode, name, ip, heartbeat=0, selfcheck=False, uptime='0d 0h', usercount=0, cpu=0.0):
@@ -142,6 +144,20 @@ class TestUser(unittest.TestCase):
         testuser.save()
         returneduser = model.User.get('testuserwithstuff')
         self.verify(returneduser, 'testuserwithstuff', '_hunter2', 'rawr@example.com', 822, 2000)
+
+    def test_user_buy_sub(self):
+        pooruser = model.User.new("pooruser", "_hunter2", None, None)
+        pooruser.credit_isk = 1000
+        # monkey patching :) (otherwise an exception about btcprices table being empty
+        # is raised. 
+        self.real_buy_sub_btc = model.User.buy_sub_btc
+        model.User.buy_sub_btc = mock_false
+        self.assertRaises(model.NotEnoughFundsError, pooruser.buy_sub)
+        self.assertEquals(pooruser.sub_active, False)
+        payinguser = model.User.new("payinguser", "_hunter2", None, None)
+        payinguser.credit_isk = 2000
+        payinguser.buy_sub()
+        self.assertEquals(payinguser.sub_active, True)
 
 class TestInviteKey(unittest.TestCase):
     def setUp(self):

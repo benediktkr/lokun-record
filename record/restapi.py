@@ -22,6 +22,7 @@ import sec
 from common.logger import Logger
 from dalpay import DalPay
 from status import StatusState
+from model import NotEnoughFundsError
 
 logger = Logger("record")
 def log(msg):
@@ -169,13 +170,14 @@ def vpn_sub(name):
         log("VPN access granted for a user on ({0})".format(keyinfo.name))
         return {'sub_status': 'True',
                 'updated': 'False'}
-    elif user.buy_sub()+1 > 0:
+    try:
+        user.buy_sub()
         user.save()
         log("VPN access granted and charged for a user ({0})".format(keyinfo.name))
         return {'sub_status': 'True',
                 'updated': 'True'}
-    else:
-        log("VPN access denied for a user ({0})".format(keyinfo.name))
+    except NotEnoughFundsError as ex:
+        log("VPN access denied for a user on {0}: ".format(keyinfo.name, str(ex)))
         return {'sub_status': 'False'}
 
 @post('/vpn/<name>/report')
@@ -237,7 +239,7 @@ def postnode(name):
         node.total_throughput = int(request.forms.total_throughput)
         node.uptime = request.forms.uptime
         node.save()
-    except ValueError as error:
+    except (ValueError, KeyError) as error:
         abort(400, str(error))
 
     return {'status': 'ok',
