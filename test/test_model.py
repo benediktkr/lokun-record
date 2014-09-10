@@ -71,25 +71,26 @@ class TestNode(unittest.TestCase):
         model.Node.auth("keynode", testkey.key)
 
     def test_node_update_save(self):
-        updatenode = model.Node.new('save', "1.1.1.1")
+        newnode = model.Node.new('node', "1.1.1.1")
         # Doing it in the same manner as restapi.py does it
-        updatenode.usercount = int("2")
+        getnode = model.Node.get("node")
+        getnode.usercount = int("2")
         import time
         heartbeat = int(time.time())
-        updatenode.heartbeat = heartbeat
-        updatenode.throughput = int("123")
-        updatenode.uptime = "1d 0h"
-        updatenode.cpu = float("80.73")
-        self.assertTrue(updatenode.score >= 100)
-
-        self.verify(updatenode, "save", "1.1.1.1", usercount=2, heartbeat=heartbeat, uptime="1d 0h", cpu=80.73)
-        
-        updatenode.save()
-
-        getnode = model.Node.get("save")
+        getnode.heartbeat = heartbeat
+        getnode.throughput = int("123")
+        getnode.uptime = "1d 0h"
+        getnode.cpu = float("80.73")
+        getnode.selfcheck = True
         self.assertTrue(getnode.score >= 100)
-        self.compare(updatenode, getnode)
+
+        self.verify(getnode, "node", "1.1.1.1", usercount=2, heartbeat=heartbeat, uptime="1d 0h", cpu=80.73, selfcheck=True)
         
+        getnode.save()
+        updatednode = model.Node.get("node")
+
+        self.assertTrue(updatednode.score >= 100)
+        self.compare(updatednode, getnode)
             
 
 class TestUser(unittest.TestCase):
