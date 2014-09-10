@@ -177,7 +177,7 @@ def vpn_sub(name):
         return {'sub_status': 'True',
                 'updated': 'True'}
     except NotEnoughFundsError as ex:
-        log("VPN access denied for a user on {0}: ".format(keyinfo.name, str(ex)))
+        log("VPN access denied for a user on {0}".format(keyinfo.name, str(ex)))
         return {'sub_status': 'False'}
 
 @post('/vpn/<name>/report')
@@ -234,7 +234,7 @@ def postnode(name):
         node.cpu = float(request.forms['cpu'])
         node.usercount = int(request.forms['usercount'])
         node.heartbeat = heartbeat
-        node.selfcheck = request.forms['selfcheck'] == "True" 
+        node.selfcheck = request.forms['selfcheck'].lower() == "true" 
         node.throughput = int(request.forms['throughput'])
         node.total_throughput = int(request.forms.total_throughput)
         node.uptime = request.forms.uptime
