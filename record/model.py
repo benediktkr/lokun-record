@@ -151,6 +151,9 @@ class Node(object):
                          self.heartbeat, self.score, self.selfcheck,
                          self.throughput, self.cpu, self.uptime,
                          self.total_throughput)
+
+    def deposit(self, amount, method):
+        pass
         
     # :D
     def __iter__(self):
@@ -562,20 +565,6 @@ class DB(object):
                                  from user where username=?""", (username,))
         return c.fetchone()
 
-    def add_api_key(self, key, name, status="good"):
-        self.conn.execute("insert into apikeys(key, status, name) values (?, ?, ?)", (key, status, name))
-        self.commit()
-
-    def api_key_name(self, key):
-        c = self.conn.execute("select name from apikeys where key=?", (key,))
-        result = c.fetchone()
-        return False if not result else result[0]
-
-    def get_all_api_keys(self):
-        sql = "select key, name, status from apikeys"
-        c = self.conn.execute(sql)
-        return c.fetchall()
-
     def get_api_key(self, key):
         sql = "select key, name, status from apikeys where key = ?"
         c = self.conn.execute(sql, (key, ))
@@ -650,22 +639,6 @@ class DB(object):
             raise Exception("Table btcprices empty")
         return float(r[0])
 
-    def lb_add(self, name, ip):
-        sql = """insert into loadbalancing(
-                              name,
-                              ip,
-                              usercount,
-                              heartbeat,
-                              score,
-                              selfcheck,
-                              throughput,
-                              cpu,
-                              total_throughput,
-                              uptime)
-                 values(?, ?, 0, 0, 0, 0, 0, 0.0, 0, '0d 0h')"""
-        self.conn.execute(sql, (name, ip))
-        self.conn.commit()
-
     def lb_save(self, name, ip, userc, heartb, score, selfc, throughp, cpu, uptime, total):
         sql = """insert or replace
                  into loadbalancing(name, ip, usercount, heartbeat,
@@ -698,30 +671,7 @@ class DB(object):
         cursor.close()
         return result
 
-    def lb_get_usercount(self, name):
-        sql="select usercount from loadbalancing where name=?"
-        uc = self.conn.execute(sql, (name, )).fetchone()
-        return uc[0] if uc != None else None
 
-    def lb_update(self, d):
-        sql = """update loadbalancing
-                 set usercount=?, score=?, heartbeat=strftime('%s', 'now'),
-                     throughput=?, selfcheck=?, cpu=?
-                 where name=?"""
-        self.conn.execute(sql, (d['usercount'], d['score'], d['throughput'],
-                                d['selfcheck'], d['name'], d['cpu']))
-        self.conn.commit()
-
-    def lb_heartbeat(self, name):
-        sql = "update loadbalancing set heartbeat=strftime('%s', 'now') where name=?"
-        self.conn.execute(sql, (name, ))
-        self.conn.commit()
-
-    def lb_exists(self, name):
-        sql = "select name from loadbalancing where name=?"
-        l = self.conn.execute(sql, (name, )).fetchall()
-        return len(l) > 0
-        
     def max_mailid(self):
         sql = "select max(mailid) from paymentbot"
         res = self.conn.execute(sql).fetchone()
@@ -759,7 +709,7 @@ def mktables(conn):
     c.execute("""create table apikeys (
                      key text primary key,
                      status text not null,
-                     name text)""") # was "comment"
+                     name text)""") 
     c.execute("""create table btcprices (
                      id integer primary key autoincrement,
                      btc_isk real not null,
@@ -782,3 +732,11 @@ def mktables(conn):
                      total_throughput integer not null default 0)""")
     c.execute("""create table paymentbot (
                      mailid int primary key)""")
+    c.execute("""create table deposits (
+                     date text not null default "",
+                     username text not null default "",
+                     amount integer not null default 0,
+                     method text not null default "",
+                     vsk float not null default 0.0,
+                     fees integer not null default 0,
+                     invoice text not null default "")""")
