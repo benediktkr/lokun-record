@@ -175,6 +175,9 @@ class Node(object):
                          self.heartbeat, self.score, self.selfcheck,
                          self.throughput, self.cpu, self.uptime,
                          self.total_throughput, self.enabled, self.is_exit)
+
+    def deposit(self, amount, method):
+        pass
         
     # :D
     def __iter__(self):
@@ -818,7 +821,7 @@ def mktables(conn):
     c.execute("""create table apikeys (    
                      key text primary key,
                      status text not null,
-                     name text)""") # was "comment"
+                     name text)""") 
     # will probably be moved to lokun-billing
     c.execute("""create table btcprices (
                      id integer primary key autoincrement,
@@ -850,3 +853,11 @@ def mktables(conn):
                      name text not null default "",
                      ip text not null default "",
                      comments text not null default "")""")
+    c.execute("""create table deposits (
+                     date text not null default "",
+                     username text not null default "",
+                     amount integer not null default 0,
+                     method text not null default "",
+                     vsk float not null default 0.0,
+                     fees integer not null default 0,
+                     invoice text not null default "")""")
