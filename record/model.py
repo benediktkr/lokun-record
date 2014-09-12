@@ -4,11 +4,13 @@ import os
 import re
 import random
 from datetime import date, timedelta, datetime
-from subprocess import Popen, call
+from subprocess import Popen, call, PIPE
 from time import time
+from contextlib import closing
 
 from netaddr import IPAddress
 from netaddr.core import AddrFormatError
+from fdfgen import forge_fdf
 
 import config
 import hashing
@@ -151,9 +153,6 @@ class Node(object):
                          self.heartbeat, self.score, self.selfcheck,
                          self.throughput, self.cpu, self.uptime,
                          self.total_throughput)
-
-    def deposit(self, amount, method):
-        pass
         
     # :D
     def __iter__(self):
@@ -180,6 +179,73 @@ class Node(object):
 
     def __getitem__(self, key):
         return dict(self)[key]
+
+class Deposit(object):
+    def __init__(self, **kwargs):
+        # We creating a new Deposit, the depositid is not known (db autoincrement)
+        self.depositid = kwargs.get('depositid', 0)
+        self.date = date.today().isoformat()
+        self.username = kwargs.get('username', '')
+        self.amount = kwargs.get('amount')
+        self.method = kwargs.get('method', '')
+        self.vsk = kwargs.get('vsk', 0.0)  # percentage
+        self.fees = kwargs.get('fees', 0)  # amount in isk :/
+
+    @property
+    def vsk_amount(self):
+        return self.amount*self.vsk/100
+
+    @property
+    def income(self):
+        return self.amount - self.vsk_amount - self.fees
+
+    @property
+    def isk_string(self):
+        return str(self.amount) + " ISK"
+
+    @property
+    def invoice(self):
+        return "INVLOK" + str(self.depositid).zfill(5) + ".pdf"
+
+    def mkinvoice(self):
+        fields = [("method", self.method),
+                  ("amount", self.isk_string),
+                  ("date", self.date),
+                  ("vsk", self.vsk)]
+        fdf = forge_fdf("", fields, [], [], [])
+        dest = os.path.join(config.reikningar_path, self.invoice)
+        pdftk = ["pdftk", config.reikningar_template, "fill_form", "-", dest, "flatten"]
+        proc = Popen(pdftk, stdin=PIPE)
+        output = proc.communicate(input=fdf)
+        if output[1]: # stderr
+            raise IOError(output[1])
+
+    def save(self):
+        depositid = DB.get().save_deposit(self)
+        self.depositid = depositid
+        
+    @classmethod
+    def new(cls, username, amount, method, vsk=0, fees=0, mkinvoice=True):
+        user = User.get(username)
+        if not user:
+            raise ValueError("Unknown username: {0}".format(username))
+        # depositid not known until saved
+        today = date.today().isoformat()
+        newinv = cls(amount=amount, username=username, method=method, vsk=vsk,
+                     date=today, fees=fees)
+        newinv.save()
+        user.deposit(amount)
+        user.save()
+        if mkinvoice:
+            newinv.mkinvoice()
+        return newinv
+
+    @classmethod
+    def get(cls, depositid):
+        row = DB.get().select_deposit(depositid)
+        
+        return cls(depositid=row[0], invoice=row[1], date=row[2], username=row[3],
+                   amount=row[4], method=row[5], vsk=row[6], fees=row[7])
         
     
 class User(object):
@@ -225,6 +291,9 @@ class User(object):
     def save(self):
         self.db.save_user(self.username, self.hashed_passwd, self.email,
                           self.dl_left, self.credit_isk, self.credit_btc, self.sub_end)
+
+    def deposit(self, amount):
+        self.credit_isk += amount
 
     def buy_sub(self):
         """Attempts to buy the user some subscription. First tries to use
@@ -684,7 +753,27 @@ class DB(object):
         sql = "insert into paymentbot(mailid) values(?)"
         self.conn.execute(sql, (mailid, ))
         self.conn.commit()
-        
+
+    def save_deposit(self, deposit):
+        sql = """insert or replace
+                 into deposit(invoice, date, username, amount, method, vsk, fees)
+                 values(?, ?, ?, ?, ?, ?, ?)"""
+        d = deposit
+        # Username is not saved
+        data = (d.invoice, d.date, d.username, d.amount, d.method, d.vsk, d.fees)
+        # We have to use a cursor to get the last row id
+        with closing(self.conn.cursor()) as cursor:
+            cursor.execute(sql, data)
+            self.conn.commit()
+            return cursor.lastrowid
+
+    def select_deposit(self, depositid):
+        sql = """select depositid, invoice, date, username, amount, method, vsk, fees
+        from deposit
+        where depositid=?"""
+        c = self.conn.execute(sql, (depositid, ))
+        return c.fetchone()        
+
 def new_db(name):
     if os.path.exists(name):
         os.remove(name)
@@ -732,11 +821,12 @@ def mktables(conn):
                      total_throughput integer not null default 0)""")
     c.execute("""create table paymentbot (
                      mailid int primary key)""")
-    c.execute("""create table deposits (
+    c.execute("""create table deposit (
+                     depositid integer primary key autoincrement,
+                     invoice text,
                      date text not null default "",
                      username text not null default "",
                      amount integer not null default 0,
                      method text not null default "",
                      vsk float not null default 0.0,
-                     fees integer not null default 0,
-                     invoice text not null default "")""")
+                     fees integer not null default 0)""")
