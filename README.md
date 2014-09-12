@@ -20,6 +20,7 @@ Python packages needed
  * `pycrypto`
  * `webtest`
  * `netaddr`
+ * `fdfgen`
 
 Dependencies from apt:
 -----------------------------
