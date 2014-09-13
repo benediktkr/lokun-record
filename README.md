@@ -45,12 +45,8 @@ in the callback that is sent to api.lokun.is. The message follows the following
 
      AES_ENCRYPT(Base64("Username$Nonce"), key) $ Nonce $ IV $ HMAC
 
-
-The password from DalPay is compared, as it is the only provided mechanism
-to be sure the message orignated from DalPay. This protocol does nothing to 
-prevent false replay messages from a user. Thus, it does not protect Lokun from
-a user potentially scamming a free VPN connection, but it protects users from
-DalPay, if they were served an injunction. 
+This is done to ensure that a 3-rd party handling payments doesn't have the 
+information required to associate card details with a Lokun username.
 
 Other parts
 ===
