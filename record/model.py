@@ -562,20 +562,6 @@ class DB(object):
                                  from user where username=?""", (username,))
         return c.fetchone()
 
-    def add_api_key(self, key, name, status="good"):
-        self.conn.execute("insert into apikeys(key, status, name) values (?, ?, ?)", (key, status, name))
-        self.commit()
-
-    def api_key_name(self, key):
-        c = self.conn.execute("select name from apikeys where key=?", (key,))
-        result = c.fetchone()
-        return False if not result else result[0]
-
-    def get_all_api_keys(self):
-        sql = "select key, name, status from apikeys"
-        c = self.conn.execute(sql)
-        return c.fetchall()
-
     def get_api_key(self, key):
         sql = "select key, name, status from apikeys where key = ?"
         c = self.conn.execute(sql, (key, ))
@@ -650,22 +636,6 @@ class DB(object):
             raise Exception("Table btcprices empty")
         return float(r[0])
 
-    def lb_add(self, name, ip):
-        sql = """insert into loadbalancing(
-                              name,
-                              ip,
-                              usercount,
-                              heartbeat,
-                              score,
-                              selfcheck,
-                              throughput,
-                              cpu,
-                              total_throughput,
-                              uptime)
-                 values(?, ?, 0, 0, 0, 0, 0, 0.0, 0, '0d 0h')"""
-        self.conn.execute(sql, (name, ip))
-        self.conn.commit()
-
     def lb_save(self, name, ip, userc, heartb, score, selfc, throughp, cpu, uptime, total):
         sql = """insert or replace
                  into loadbalancing(name, ip, usercount, heartbeat,
@@ -698,30 +668,7 @@ class DB(object):
         cursor.close()
         return result
 
-    def lb_get_usercount(self, name):
-        sql="select usercount from loadbalancing where name=?"
-        uc = self.conn.execute(sql, (name, )).fetchone()
-        return uc[0] if uc != None else None
 
-    def lb_update(self, d):
-        sql = """update loadbalancing
-                 set usercount=?, score=?, heartbeat=strftime('%s', 'now'),
-                     throughput=?, selfcheck=?, cpu=?
-                 where name=?"""
-        self.conn.execute(sql, (d['usercount'], d['score'], d['throughput'],
-                                d['selfcheck'], d['name'], d['cpu']))
-        self.conn.commit()
-
-    def lb_heartbeat(self, name):
-        sql = "update loadbalancing set heartbeat=strftime('%s', 'now') where name=?"
-        self.conn.execute(sql, (name, ))
-        self.conn.commit()
-
-    def lb_exists(self, name):
-        sql = "select name from loadbalancing where name=?"
-        l = self.conn.execute(sql, (name, )).fetchall()
-        return len(l) > 0
-        
     def max_mailid(self):
         sql = "select max(mailid) from paymentbot"
         res = self.conn.execute(sql).fetchone()
@@ -734,7 +681,7 @@ class DB(object):
         sql = "insert into paymentbot(mailid) values(?)"
         self.conn.execute(sql, (mailid, ))
         self.conn.commit()
-        
+
 def new_db(name):
     if os.path.exists(name):
         os.remove(name)
