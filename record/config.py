@@ -51,3 +51,7 @@ logto = ["benedikt@inventati.org"]
 dalpay_passwd = "dalpaypass"
 # d0aa.. is the dev key
 dalpay_key = "d0aa599304ff1cea6b51dadd5dc6211524538c40940235c77f33b29a1cef2794"
+
+
+reikningar_path = "/home/benedikt/devroot/reikningar/"
+reikninga_template = "/home/benedikt/devroot/reikningar/reikningur.pdf"
