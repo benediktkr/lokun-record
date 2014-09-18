@@ -205,7 +205,7 @@ class Deposit(object):
 
     @property
     def invoice(self):
-        return "INVLOK" + str(self.depositid).zfill(5) + ".pdf"
+        return "INVLOK" + str(self.depositid).zfill(5)
 
     def mkinvoice(self):
         fields = [("method", self.method),
