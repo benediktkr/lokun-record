@@ -85,11 +85,11 @@ class NodeErrors(StatusState):
     @classmethod
     def check(cls):
         status = "green"
-        nodes = model.NodeList.get()
-        if nodes.down:
-            status = "yellow" if len(nodes.down) == 1 else "red"
+        down = model.NodeList.down()
+        if down:
+            status = "yellow" if len(down) == 1 else "red"
         errors = []
-        for n in nodes.down:
+        for n in down:
             if not n.selfcheck:
                 errors.append(n.name + ": selfcheck False")
             if n.heartbeat_age > 12*60:

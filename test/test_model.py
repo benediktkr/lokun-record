@@ -20,7 +20,7 @@ def mock_false(*args, **kwargs):
     return False
 
 class TestNode(unittest.TestCase):
-    def verify(self, testnode, name, ip, heartbeat=0, selfcheck=False, uptime='0d 0h', usercount=0, cpu=0.0):
+    def verify(self, testnode, name, ip, heartbeat=0, selfcheck=False, uptime='0d 0h', usercount=0, cpu=0.0, enabled=False):
             self.assertEquals(testnode.name, name)
             self.assertEquals(testnode.ip, ip)
             self.assertEquals(testnode.heartbeat, heartbeat)
@@ -28,6 +28,7 @@ class TestNode(unittest.TestCase):
             self.assertEquals(testnode.uptime, uptime)
             self.assertEquals(testnode.usercount, usercount)
             self.assertEquals(testnode.cpu, cpu)
+            self.assertEquals(testnode.enabled, enabled)
             self.assertTrue(type(testnode.name) in [str, unicode])
             self.assertTrue(type(testnode.ip) in [str, unicode])
             self.assertIs(type(testnode.heartbeat), int)
@@ -35,10 +36,11 @@ class TestNode(unittest.TestCase):
             self.assertTrue(type(testnode.uptime) in [unicode, str])
             self.assertIs(type(testnode.usercount), int)
             self.assertIs(type(testnode.cpu), float)
+            self.assertIs(type(testnode.enabled), bool)
             self.assertTrue(testnode.score >= 0)
 
     def compare(self, node1, node2):
-        self.verify(node1, node2.name, node2.ip, heartbeat=node2.heartbeat, selfcheck=node2.selfcheck, uptime=node2.uptime, usercount=node2.usercount, cpu=node2.cpu)
+        self.verify(node1, node2.name, node2.ip, heartbeat=node2.heartbeat, selfcheck=node2.selfcheck, uptime=node2.uptime, usercount=node2.usercount, cpu=node2.cpu, enabled=node2.enabled)
 
     def setUp(self):
         model.new_db(DB_NAME)
@@ -70,21 +72,74 @@ class TestNode(unittest.TestCase):
         testkey.save()
         model.Node.auth("keynode", testkey.key)
 
+    def test_node_enabled(self):
+        enablednode = model.Node.new('enabled', '1.1.1.1')
+        enablednode.update(selfcheck=True)
+        enablednode.enabled = True
+        enablednode.save()
+        # When a node is enabled it is either alive
+        self.assertTrue(enablednode.alive and not enablednode.down)
+        # or down
+        enablednode.update(selfcheck=False)
+        self.assertTrue(enablednode.down and not enablednode.alive)
+        # When a node is disabled, it's never 'down' (because status should report
+        # on a disabled node. 
+        disablednode = model.Node.new('disabled', '2.2.2.2')
+        disablednode.update(selfcheck=False)
+        disablednode.save()
+        self.assertTrue(not disablednode.down)
+        disablednode.update(selfcheck=True)
+        disablednode.save()
+        # Should still be alive even though it is disabled
+        self.assertTrue(disablednode.alive)
+        
+
+    def test_nodelist(self):
+        downnode = model.Node.new('down', '1.1.1.1')
+        downnode.enabled = True
+        downnode.save()
+        
+        nodenames = lambda f: [a.name for a in f()]
+
+        self.assertTrue("down" in nodenames(model.NodeList.down))
+        self.assertTrue("down" in nodenames(model.NodeList.get))
+        self.assertTrue("down" not in nodenames(model.NodeList.best))
+        self.assertTrue("down" not in nodenames(model.NodeList.alive))
+
+        disablednode = model.Node.new('disabled', '1.1.1.1')
+        disablednode.enabled = False
+        disablednode.update(selfcheck=True)
+        disablednode.save()
+        self.assertTrue("disabled" not in nodenames(model.NodeList.down))
+        self.assertTrue("disabled" in nodenames(model.NodeList.get))
+        self.assertTrue("disabled" not in nodenames(model.NodeList.best))
+        self.assertTrue("disabled" in nodenames(model.NodeList.alive))
+        # and if we enabled it :)
+        disablednode.enabled = True
+        disablednode.save()
+        self.assertTrue("disabled" in nodenames(model.NodeList.best))
+
     def test_node_update_save(self):
         newnode = model.Node.new('node', "1.1.1.1")
         # Doing it in the same manner as restapi.py does it
         getnode = model.Node.get("node")
-        getnode.usercount = int("2")
-        import time
-        heartbeat = int(time.time())
-        getnode.heartbeat = heartbeat
-        getnode.throughput = int("123")
-        getnode.uptime = "1d 0h"
-        getnode.cpu = float("80.73")
-        getnode.selfcheck = True
+
+
+        usercount = int("2")
+        throughput = int("123")
+        total_throughput = int("1234")
+        uptime = "1d 0h"
+        cpu = float("80.73")
+        selfcheck = True
+
+        getnode.update(usercount=usercount, throughput=throughput, total_throughput=total_throughput, uptime=uptime, cpu=cpu, selfcheck=selfcheck)
+        heartbeat = getnode.heartbeat
+        getnode.enabled = True
+        getnode.save()
+        
         self.assertTrue(getnode.score >= 100)
 
-        self.verify(getnode, "node", "1.1.1.1", usercount=2, heartbeat=heartbeat, uptime="1d 0h", cpu=80.73, selfcheck=True)
+        self.verify(getnode, "node", "1.1.1.1", usercount=2, heartbeat=heartbeat, uptime="1d 0h", cpu=80.73, selfcheck=True, enabled=True)
         
         getnode.save()
         updatednode = model.Node.get("node")
