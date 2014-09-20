@@ -30,31 +30,33 @@ class NodeList(list):
         return cls([Node.get(a['name']) for a in DB.get().lb_get_all()])
 
     @classmethod
-    def getbest(cls):
-        return cls.get().best
+    def best(cls, n=3):
+        all_nodes = cls.get()
+        candidates =  [a for a in all_nodes if a.alive and a.enabled]
+        by_score = sorted(candidates, key=lambda a: a.score)[:n]
+        random.shuffle(by_score)
+        return cls(by_score)
 
     @classmethod
-    def getdown(cls):
-        return cls.get().down
+    def alive(cls):
+        all_nodes = cls.get()
+        return cls([a for a in all_nodes if a.alive])
 
-    @property
-    def best(self, n=3):
-        by_score = sorted(self.alive, key=lambda a: a['score'])[:n]
-        random.shuffle(by_score)
-        return by_score
+    @classmethod
+    def down(cls):
+        all_nodes = cls.get()
+        return cls([a for a in all_nodes if a.down])
 
-    @property
-    def alive(self):
-        return [a for a in self if a['alive']]
-
-    @property
-    def down(self):
-        return [a for a in self if not a['alive']]
+    @classmethod
+    def disabled(cls):
+        all_nodes = cls.get()
+        return cls([a for a in all_nodes if not a.enabled]) 
+    
 
 class Node(object):
     def __init__(self, name, ip, **kwargs):
-        self.name = name
-        self.ip = ip
+        self.name = str(name)
+        self.ip = str(ip)
         self.throughput = kwargs.get('throughput', 0)
         self.total_throughput = kwargs.get('total_throughput', 0)
         self._uptime = kwargs.get('uptime', '0d 0h')
@@ -66,6 +68,8 @@ class Node(object):
         # Enforce int for hearbeat (time.time() returns a float)
         heartbeat = kwargs.get('heartbeat', 0)
         self.heartbeat = int(heartbeat)
+        enabled = kwargs.get('enabled', False)
+        self.enabled = bool(enabled)
         
     @classmethod
     def get(cls, name):
@@ -76,7 +80,7 @@ class Node(object):
                    selfcheck=l['selfcheck'], throughput=l['throughput'],
                    cpu=l['cpu'], heartbeat=l['heartbeat'],
                    score=l['score'], uptime=l['uptime'],
-                   total_throughput=l['total_throughput'])
+                   total_throughput=l['total_throughput'], enabled=l['enabled'])
 
     @classmethod
     def auth(cls, name, key):
@@ -138,19 +142,36 @@ class Node(object):
     def alive(self):
         if not self.selfcheck:
             return False
-        if int(self.heartbeat_age) > 12*60:
+        elif int(self.heartbeat_age) > 12*60:
             return False
-        return True
+        else:
+            return True
+
+    @property
+    def down(self):
+        # A disabled node isn't down (doesnt affect status)
+        return self.enabled and not self.alive
+        
 
     @property
     def heartbeat_age(self):
-        return time()-self.heartbeat
+        return int(time())-self.heartbeat
+
+    def update(self, usercount=0, selfcheck=False, throughput=0, total_throughput=0, uptime='0d 0h', cpu=0.0):
+        self.usercount = int(usercount)
+        self.heartbeat = int(time())
+        self.selfcheck = bool(selfcheck)
+        self.throughput = int(throughput)
+        self.total_throughput = int(total_throughput)
+        self.uptime = str(uptime)
+        self.cpu = float(cpu)
+        self.save()
     
     def save(self):
         DB.get().lb_save(self.name, self.ip, self.usercount,
                          self.heartbeat, self.score, self.selfcheck,
                          self.throughput, self.cpu, self.uptime,
-                         self.total_throughput)
+                         self.total_throughput, self.enabled)
         
     # :D
     def __iter__(self):
@@ -167,6 +188,7 @@ class Node(object):
         attrs.append(('total_throughput', self.total_throughput))
         attrs.append(('uptime', self.uptime))
         attrs.append(('cpu', self.cpu))
+        attrs.append(('enabled', self.enabled))
         return iter(attrs)
 
     def __str__(self):
@@ -636,26 +658,26 @@ class DB(object):
             raise Exception("Table btcprices empty")
         return float(r[0])
 
-    def lb_save(self, name, ip, userc, heartb, score, selfc, throughp, cpu, uptime, total):
+    def lb_save(self, name, ip, userc, heartb, score, selfc, throughp, cpu, uptime, total, enabled):
         sql = """insert or replace
                  into loadbalancing(name, ip, usercount, heartbeat,
                        score, selfcheck, throughput, cpu, uptime,
-                       total_throughput)  
-                 values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
-        self.conn.execute(sql, (name, ip, userc, heartb, score, selfc, throughp, cpu, uptime, total))
+                       total_throughput, enabled)  
+                 values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+        self.conn.execute(sql, (name, ip, userc, heartb, score, selfc, throughp, cpu, uptime, total, enabled))
         self.conn.commit()
 
     def lb_get(self, name):
         sql = """select name, ip, score, usercount, selfcheck, 
                         throughput, cpu, heartbeat, uptime,
-                        total_throughput
+                        total_throughput, enabled
                  from loadbalancing where name=?"""
         result = self.conn.execute(sql, (name,)).fetchone()
         if result == None:
             return None
         fields = ["name", "ip", "score", "usercount", "selfcheck",
                   "throughput", "cpu", "heartbeat", "uptime",
-                  "total_throughput"]
+                  "total_throughput", "enabled"]
         d = dict(zip(fields, result))
         return d
 
@@ -726,6 +748,7 @@ def mktables(conn):
                      throughput integer not null default 0,
                      cpu real not null default 0.0,
                      uptime text not null default '0d 0h',
-                     total_throughput integer not null default 0)""")
+                     total_throughput integer not null default 0,
+                     enabled integer not null default 0)""")
     c.execute("""create table paymentbot (
                      mailid int primary key)""")
