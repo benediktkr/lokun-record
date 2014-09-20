@@ -212,15 +212,20 @@ def node_auth(name):
 @post('/nodes')
 def getallnodes():
     key_auth()
-    nodelist = model.Node.getall()
     nodes = lambda nl: [dict(node) for node in nl]
-    
-    if request.params.filter == "best":
-        return {'data': nodes(nodelist.best) }
+
+    if not request.params.filter or request.params.filter == "all":
+        return {'data': nodes(model.NodeList.get()) }    
+    elif request.params.filter == "best":
+        return {'data': nodes(model.NodeList.best()) }
     elif request.params.filter == "alive":
-        return {'data': nodes(nodelist.alive) }
+        return {'data': nodes(model.NodeList.best()) }
+    elif request.params.filter == "down":
+        return {'data': nodes(model.NodeList.down()) }
+    elif request.params.fitler == "disabled":
+        return {'data': nodes(model.NodeList.disabled()) }
     else:
-        return {'data': nodes(nodelist) }
+        abort(400, "Invalid filter")
 
 @post('/nodes/<name>')
 def postnode(name):
