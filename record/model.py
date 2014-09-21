@@ -484,14 +484,20 @@ class APIKey(object):
             return cls(key, None, "error")
         key, name, status = row
         return cls(key, name, status)
-        
+
+    @classmethod
+    def get_by_name(cls, name):
+        rows = DB.get().get_api_key_by_name(name)
+        return [cls(k[0], k[1], k[2]) for k in rows]
+    
     @classmethod
     def auth(cls, key, name=""):
         """Authorize this key."""
         apikey = cls.get(key)
         if apikey.good and (name == apikey.name or not name):
             return apikey
-        raise ValueError("APIKey not accepted")
+        else:
+            raise ValueError("APIKey not accepted")
 
 # --- Password and security ---------------------------------------------------
 
@@ -589,6 +595,11 @@ class DB(object):
         c = self.conn.execute(sql, (key, ))
         result = c.fetchone()
         return result
+
+    def get_api_key_by_name(self, name):
+        sql = "select key, name, status from apikeys where name = ?"
+        c = self.conn.execute(sql, (name, ))
+        return c.fetchall()
         
     def save_api_key(self, key, name, status):
         sql = "insert or replace into apikeys(key, name, status) values(?, ?, ?)"

@@ -100,7 +100,9 @@ class TestNode(unittest.TestCase):
         downnode.save()
         
         nodenames = lambda f: [a.name for a in f()]
+        self.compare(model.NodeList.down()[0], downnode)
 
+        self.assertTrue(any(self.compare(n, downnode) for n in model.NodeList.down()))
         self.assertTrue("down" in nodenames(model.NodeList.down))
         self.assertTrue("down" in nodenames(model.NodeList.get))
         self.assertTrue("down" not in nodenames(model.NodeList.best))
@@ -301,6 +303,15 @@ class TestAPIKey(unittest.TestCase):
         testkey.status = "revoked"
         testkey.save()
         self.assertRaises(ValueError, model.APIKey.auth, testkey.key)
+
+    def test_get_by_name(self):
+        newkey = model.APIKey.new("newkey1")
+        get_newkey_list = model.APIKey.get_by_name("newkey1")
+        self.assertIs(type(get_newkey_list), list)
+        get_newkey = get_newkey_list[0]
+        self.assertIs(type(get_newkey), model.APIKey)
+        self.compare(newkey, get_newkey)
+        
         
 
 if __name__ == '__main__':
