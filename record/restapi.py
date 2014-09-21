@@ -295,8 +295,9 @@ def loadbalancer():
 @get('/lokun/exits')
 def exits():
     response.content_type="application/json"
-    ips = ['46.149.23.163', # gq account: lokun0
-           '46.149.20.225'] # gq account: lokun
+    ips = ['46.149.23.163',   # gq account: lokun0
+           '46.149.20.225',   # gq account: lokun
+           '79.134.255.166']  # datacell vps vpn30
     return {'data': ips}
 
 @get('/lokun/connected')
