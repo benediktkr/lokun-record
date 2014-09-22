@@ -719,6 +719,17 @@ class DB(object):
         self.conn.execute(sql, (mailid, ))
         self.conn.commit()
 
+
+    def save_exit_supplement(self, name, ip, comments):
+        sql = "insert or update into exit_supplement(name, ip, comments) values(?, ?, ?)"
+        self.conn.execute(sql, (name, ip, comments))
+        self.conn.commit()
+
+    def get_exit_supplement(self, name):
+        sql = "select name, ip, coments from exit_supplement where name=?"
+        c = self.conn.execute(sql, (name, ))
+        return c.fetchone()
+
 def new_db(name):
     if os.path.exists(name):
         os.remove(name)
@@ -773,6 +784,6 @@ def mktables(conn):
     c.execute("""create table paymentbot (
                      mailid int primary key)""")
     c.execute("""create table exit_supplement(
-                     ip text not null default "",
                      name text not null default "",
+                     ip text not null default "",
                      comments text not null default "")""")
