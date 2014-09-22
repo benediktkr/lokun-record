@@ -297,7 +297,8 @@ def exits():
     response.content_type="application/json"
     ips = ['46.149.23.163',   # gq account: lokun0
            '46.149.20.225',   # gq account: lokun
-           '79.134.255.166']  # datacell vps vpn30
+           '79.134.255.166',  # datacell vps vpn30
+           '37.235.49.17']    # edis vps vpn20
     return {'data': ips}
 
 @get('/lokun/connected')
