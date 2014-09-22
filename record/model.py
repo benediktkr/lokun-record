@@ -70,6 +70,8 @@ class Node(object):
         self.heartbeat = int(heartbeat)
         enabled = kwargs.get('enabled', False)
         self.enabled = bool(enabled)
+        is_exit = kwargs.get('is_exit', False)
+        self.is_exit = bool(is_exit)
         
     @classmethod
     def get(cls, name):
@@ -80,7 +82,8 @@ class Node(object):
                    selfcheck=l['selfcheck'], throughput=l['throughput'],
                    cpu=l['cpu'], heartbeat=l['heartbeat'],
                    score=l['score'], uptime=l['uptime'],
-                   total_throughput=l['total_throughput'], enabled=l['enabled'])
+                   total_throughput=l['total_throughput'],
+                   enabled=l['enabled'], is_exit=l['is_exit'])
 
     @classmethod
     def auth(cls, name, key):
@@ -92,7 +95,7 @@ class Node(object):
 
     
     @classmethod
-    def new(cls, name, ip):
+    def new(cls, name, ip, is_exit=False):
         lb = cls.get(name)
         if lb:
             raise ValueError("Loadbalancer already exists")
@@ -100,7 +103,7 @@ class Node(object):
             IPAddress(ip)
         except AddrFormatError:
             raise ValueError("ip")
-        newnode = cls(name, ip)
+        newnode = cls(name, ip, is_exit=is_exit)
         newnode.save()
         return newnode
 
@@ -171,7 +174,7 @@ class Node(object):
         DB.get().lb_save(self.name, self.ip, self.usercount,
                          self.heartbeat, self.score, self.selfcheck,
                          self.throughput, self.cpu, self.uptime,
-                         self.total_throughput, self.enabled)
+                         self.total_throughput, self.enabled, self.is_exit)
         
     # :D
     def __iter__(self):
@@ -189,6 +192,7 @@ class Node(object):
         attrs.append(('uptime', self.uptime))
         attrs.append(('cpu', self.cpu))
         attrs.append(('enabled', self.enabled))
+        attrs.append(('is_exit', self.is_exit))
         return iter(attrs)
 
     def __str__(self):
@@ -669,26 +673,26 @@ class DB(object):
             raise Exception("Table btcprices empty")
         return float(r[0])
 
-    def lb_save(self, name, ip, userc, heartb, score, selfc, throughp, cpu, uptime, total, enabled):
+    def lb_save(self, name, ip, userc, heartb, score, selfc, throughp, cpu, uptime, total, enabled, is_exit):
         sql = """insert or replace
                  into loadbalancing(name, ip, usercount, heartbeat,
                        score, selfcheck, throughput, cpu, uptime,
-                       total_throughput, enabled)  
-                 values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
-        self.conn.execute(sql, (name, ip, userc, heartb, score, selfc, throughp, cpu, uptime, total, enabled))
+                       total_throughput, enabled, is_exit)  
+                 values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+        self.conn.execute(sql, (name, ip, userc, heartb, score, selfc, throughp, cpu, uptime, total, enabled, is_exit))
         self.conn.commit()
 
     def lb_get(self, name):
         sql = """select name, ip, score, usercount, selfcheck, 
                         throughput, cpu, heartbeat, uptime,
-                        total_throughput, enabled
+                        total_throughput, enabled, is_exit
                  from loadbalancing where name=?"""
         result = self.conn.execute(sql, (name,)).fetchone()
         if result == None:
             return None
         fields = ["name", "ip", "score", "usercount", "selfcheck",
                   "throughput", "cpu", "heartbeat", "uptime",
-                  "total_throughput", "enabled"]
+                  "total_throughput", "enabled", "is_exit"]
         d = dict(zip(fields, result))
         return d
 
@@ -736,15 +740,18 @@ def mktables(conn):
                      credit_btc real not null,
                      sub_end text not null)""")
     c.execute("""create table invitekey (key text primary key)""")
-    c.execute("""create table apikeys (
+    # will be moved to lokun-billing
+    c.execute("""create table apikeys (    
                      key text primary key,
                      status text not null,
                      name text)""") # was "comment"
+    # will probably be moved to lokun-billing
     c.execute("""create table btcprices (
                      id integer primary key autoincrement,
                      btc_isk real not null,
                      btc_price real not null,
                      timestamp datetime not null)""")
+    # will probably be moved to lokun-billing
     c.execute("""create table btcaddrs (
                      id integer primary key autoincrement,
                      addr text unique,
@@ -760,6 +767,12 @@ def mktables(conn):
                      cpu real not null default 0.0,
                      uptime text not null default '0d 0h',
                      total_throughput integer not null default 0,
-                     enabled integer not null default 0)""")
+                     enabled integer not null default 0,
+                     is_exit integer not null default 0)""")
+    # will be moved to lokun-billing
     c.execute("""create table paymentbot (
                      mailid int primary key)""")
+    c.execute("""create table exit_supplement(
+                     ip text not null default "",
+                     name text not null default "",
+                     comments text not null default "")""")
