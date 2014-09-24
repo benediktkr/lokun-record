@@ -284,9 +284,8 @@ def putnode(name):
 @get('/lokun/loadbalancer')
 def loadbalancer():
     try:
-        nodelist = model.NodeList.get()
         count = int(request.params.count or 1)
-        rurals = sample(nodelist.best, count)
+        rurals = model.NodeList.best(n=count)
         simplelist = [{"ip": a['ip'], "name": a['name']} for a in rurals]
         return {'data': simplelist}
     except ValueError:
@@ -304,7 +303,7 @@ def exits():
 @get('/lokun/connected')
 def connected():
     response.set_header('Cache-Control', 'no-cache')
-    lokun_exit_ips = exits()
+    lokun_exit_ips = exits()['data']
     ip = request['REMOTE_ADDR']
     connected = ip in lokun_exit_ips
     return {'connected': connected, 'myip': ip}
