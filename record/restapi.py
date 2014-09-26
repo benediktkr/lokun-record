@@ -191,7 +191,7 @@ def vpn_report(name):
         abort(400, "dl must be >= 0")
     user.dl_left = user.dl_left - dl
     user.save()
-    log("Report for a user recieved (user disconnected from {0})".format(keinfo.name))
+    log("Report for a user recieved (user disconnected from {0})".format(keyinfo.name))
     return {}
 
 #----------
