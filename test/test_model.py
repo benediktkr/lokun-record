@@ -4,6 +4,7 @@ import sys
 sys.path.append("..")
 import unittest
 import os
+from netaddr import IPAddress
 
 from record import model
 from record import config
@@ -18,6 +19,7 @@ def mock_noop(*args, **kwargs):
 
 def mock_false(*args, **kwargs):
     return False
+
 
 class TestNode(unittest.TestCase):
     def verify(self, testnode, name, ip, heartbeat=0, selfcheck=False, uptime='0d 0h', usercount=0, cpu=0.0, enabled=False, is_exit=False):
@@ -154,6 +156,49 @@ class TestNode(unittest.TestCase):
 
         self.assertTrue(updatednode.score >= 100)
         self.compare(updatednode, getnode)
+class TestExit(unittest.TestCase):
+    def setUp(self):
+        model.new_db(DB_NAME)
+        config.db = DB_NAME
+
+    def tearDown(self):
+        os.remove(DB_NAME)
+
+    def verify(self, testexit, name, ip, comments):
+        self.assertEquals(testexit.name, name)
+        self.assertIs(type(testexit.name), str)
+
+        self.assertEquals(testexit.ip, ip)
+        self.assertIs(type(testexit.ip), IPAddress)
+
+        self.assertEquals(testexit.comments, comments)
+        self.assertIs(type(testexit.comments), str)
+
+
+    def compare(self, exit1, exit2):
+        self.verify(exit1, exit2.name, exit2.ip, exit2.comments)
+
+    def test_new_exit_suppl(self):
+        exit1 = model.Exit.new("testexit", "1.1.1.1", comments="unittest")
+        exit2 = model.Exit.get("testexit")
+        self.compare(exit1, exit2)
+
+    def test_get_node_as_exit(self):
+        node = model.Node.new("nodeexit", "1.1.1.1", is_exit=True)
+        exit = model.Exit.get("nodeexit")
+        self.assertIs(type(exit), model.Exit)
+        error = model.Exit.get("foobar")
+        self.assertEquals(error, False)
+
+    def test_exit_list(self):
+        model.Node.new("nodeexit", "1.1.1.1", is_exit=True)
+        model.Node.new("NATnode", "1.1.1.2", is_exit=False)
+        model.Exit.new("exit", "1.1.1.3")
+
+        exitnames = [a.name for a in model.Exit.getall()]
+        self.assertTrue("nodeexit" in exitnames)
+        self.assertTrue("NATnode" not in exitnames)
+        self.assertTrue("exit" in exitnames)
             
 
 class TestUser(unittest.TestCase):

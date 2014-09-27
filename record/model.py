@@ -203,7 +203,59 @@ class Node(object):
 
     def __getitem__(self, key):
         return dict(self)[key]
+
+class Exit(object):
+    def __init__(self, name, ip, comments=""):
+        self.name = str(name)
+        self.ip = IPAddress(ip)
+        self.comments = str(comments)
+
+    @classmethod
+    def new(cls, name, ip, comments=""):
+        """Saves a new exit_supplement"""
+        if cls.get(name):
+            raise ValueError("Already exists as exit")
+        newexit = cls(name, ip, comments=comments)
+        newexit.save()
+        return newexit
+
+    @classmethod
+    def get(cls, name):
+        # This object wraps the Node object, so first we check if the exit
+        # exists as a Node. 
+        node = Node.get(name)
+        if node and node.is_exit:
+            return cls(node.name, node.ip)
         
+        row = DB.get().get_exit_supplement(name)
+        if row:
+            return cls(row[0], row[1], comments=row[2])
+        else:
+            return False
+
+    @classmethod
+    def getall(cls):
+        # First, collect all the Nodes what are exits
+        nodes = [cls(n.name, n.ip) for n in NodeList.get() if n.is_exit]
+
+        # Then, get all exit supplements
+        transform = lambda x: cls(x[0], x[1], comments=x[2]) 
+        exits = [transform(a) for a in DB.get().get_all_exit_supplements()]
+
+        return nodes + exits
+
+    def save(self):
+        # Sqlite cannot accept an IPAddress object without a binding (see #17)
+        # so we cast to str. Perhaps use @property and cast implicitly?
+        ip = str(self.ip)
+        DB.get().save_exit_supplement(self.name, ip, self.comments)
+
+    def __iter__(self):
+        attrs = []
+        attrs.append(('name', self.name))
+        attrs.append(('ip', self.ip))
+        attrs.append(('comments', self.comments))
+        return iter(attrs)
     
 class User(object):
     def __init__(self, username, hashed_passwd, db, **kwargs):
@@ -721,14 +773,19 @@ class DB(object):
 
 
     def save_exit_supplement(self, name, ip, comments):
-        sql = "insert or update into exit_supplement(name, ip, comments) values(?, ?, ?)"
+        sql = "insert or replace into exit_supplement(name, ip, comments) values(?, ?, ?)"
         self.conn.execute(sql, (name, ip, comments))
         self.conn.commit()
 
     def get_exit_supplement(self, name):
-        sql = "select name, ip, coments from exit_supplement where name=?"
+        sql = "select name, ip, comments from exit_supplement where name=?"
         c = self.conn.execute(sql, (name, ))
         return c.fetchone()
+
+    def get_all_exit_supplements(self):
+        sql = "select name, ip, comments from exit_supplement"
+        c = self.conn.execute(sql)
+        return c.fetchall()
 
 def new_db(name):
     if os.path.exists(name):
