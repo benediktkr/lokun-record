@@ -334,6 +334,29 @@ class Deposit(object):
         
         return cls(depositid=row[0], invoice=row[1], date=row[2], username=row[3],
                    amount=row[4], method=row[5], vsk=row[6], fees=row[7])
+        
+    @classmethod
+    def new(cls, username, amount, method, vsk=0, fees=0, mkinvoice=True):
+        user = User.get(username)
+        if not user:
+            raise ValueError("Unknown username: {0}".format(username))
+        # depositid not known until saved
+        today = date.today().isoformat()
+        newinv = cls(amount=amount, username=username, method=method, vsk=vsk,
+                     date=today, fees=fees)
+        newinv.save()
+        user.deposit(amount)
+        user.save()
+        if mkinvoice:
+            newinv.mkinvoice()
+        return newinv
+
+    @classmethod
+    def get(cls, depositid):
+        row = DB.get().select_deposit(depositid)
+        
+        return cls(depositid=row[0], invoice=row[1], date=row[2], username=row[3],
+                   amount=row[4], method=row[5], vsk=row[6], fees=row[7])
     
 class User(object):
     def __init__(self, username, hashed_passwd, db, **kwargs):
@@ -806,6 +829,7 @@ class DB(object):
             raise Exception("Table btcprices empty")
         return float(r[0])
 
+
     def lb_save(self, name, ip, userc, heartb, score, selfc, throughp, cpu, uptime, total, enabled, is_exit):
         sql = """insert or replace
                  into loadbalancing(name, ip, usercount, heartbeat,
@@ -867,7 +891,6 @@ class DB(object):
         c = self.conn.execute(sql)
         return c.fetchall()
 
-
     def save_deposit(self, deposit):
         sql = """insert or replace
                  into deposit(invoice, date, username, amount, method, vsk, fees)
@@ -887,7 +910,6 @@ class DB(object):
         where depositid=?"""
         c = self.conn.execute(sql, (depositid, ))
         return c.fetchone()        
-
 
 def new_db(name):
     if os.path.exists(name):
