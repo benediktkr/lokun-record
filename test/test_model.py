@@ -4,6 +4,7 @@ import sys
 sys.path.append("..")
 import unittest
 import os
+from netaddr import IPAddress
 
 from record import model
 from record import config
@@ -19,8 +20,9 @@ def mock_noop(*args, **kwargs):
 def mock_false(*args, **kwargs):
     return False
 
+
 class TestNode(unittest.TestCase):
-    def verify(self, testnode, name, ip, heartbeat=0, selfcheck=False, uptime='0d 0h', usercount=0, cpu=0.0, enabled=False):
+    def verify(self, testnode, name, ip, heartbeat=0, selfcheck=False, uptime='0d 0h', usercount=0, cpu=0.0, enabled=False, is_exit=False):
             self.assertEquals(testnode.name, name)
             self.assertEquals(testnode.ip, ip)
             self.assertEquals(testnode.heartbeat, heartbeat)
@@ -29,6 +31,7 @@ class TestNode(unittest.TestCase):
             self.assertEquals(testnode.usercount, usercount)
             self.assertEquals(testnode.cpu, cpu)
             self.assertEquals(testnode.enabled, enabled)
+            self.assertEquals(testnode.is_exit, is_exit)
             self.assertTrue(type(testnode.name) in [str, unicode])
             self.assertTrue(type(testnode.ip) in [str, unicode])
             self.assertIs(type(testnode.heartbeat), int)
@@ -37,10 +40,11 @@ class TestNode(unittest.TestCase):
             self.assertIs(type(testnode.usercount), int)
             self.assertIs(type(testnode.cpu), float)
             self.assertIs(type(testnode.enabled), bool)
+            self.assertIs(type(testnode.is_exit), bool)
             self.assertTrue(testnode.score >= 0)
 
     def compare(self, node1, node2):
-        self.verify(node1, node2.name, node2.ip, heartbeat=node2.heartbeat, selfcheck=node2.selfcheck, uptime=node2.uptime, usercount=node2.usercount, cpu=node2.cpu, enabled=node2.enabled)
+        self.verify(node1, node2.name, node2.ip, heartbeat=node2.heartbeat, selfcheck=node2.selfcheck, uptime=node2.uptime, usercount=node2.usercount, cpu=node2.cpu, enabled=node2.enabled, is_exit=node2.is_exit)
 
     def setUp(self):
         model.new_db(DB_NAME)
@@ -94,6 +98,11 @@ class TestNode(unittest.TestCase):
         self.assertTrue(disablednode.alive)
         
 
+    def test_is_exit(self):
+        exit1 = model.Node.new('exit', '1.1.1.1', is_exit=True)
+        exit2 = model.Node.get('exit')
+        self.compare(exit1, exit2)
+
     def test_nodelist(self):
         downnode = model.Node.new('down', '1.1.1.1')
         downnode.enabled = True
@@ -102,7 +111,6 @@ class TestNode(unittest.TestCase):
         nodenames = lambda f: [a.name for a in f()]
         self.compare(model.NodeList.down()[0], downnode)
 
-        self.assertTrue(any(self.compare(n, downnode) for n in model.NodeList.down()))
         self.assertTrue("down" in nodenames(model.NodeList.down))
         self.assertTrue("down" in nodenames(model.NodeList.get))
         self.assertTrue("down" not in nodenames(model.NodeList.best))
@@ -148,6 +156,53 @@ class TestNode(unittest.TestCase):
 
         self.assertTrue(updatednode.score >= 100)
         self.compare(updatednode, getnode)
+class TestExit(unittest.TestCase):
+    def setUp(self):
+        model.new_db(DB_NAME)
+        config.db = DB_NAME
+
+    def tearDown(self):
+        os.remove(DB_NAME)
+
+    def verify(self, testexit, name, ip, comments):
+        self.assertEquals(testexit.name, name)
+        self.assertIs(type(testexit.name), str)
+
+        self.assertEquals(testexit.ip, ip)
+        #self.assertIs(type(testexit.ip), IPAddress)
+        self.assertIs(type(testexit.ip), str)
+
+        self.assertEquals(testexit.comments, comments)
+        self.assertIs(type(testexit.comments), str)
+
+
+    def compare(self, exit1, exit2):
+        self.verify(exit1, exit2.name, exit2.ip, exit2.comments)
+
+    def test_new_exit_suppl(self):
+        exit1 = model.Exit.new("testexit", "1.1.1.1", comments="unittest")
+        exit2 = model.Exit.get("testexit")
+        self.compare(exit1, exit2)
+
+    def test_get_node_as_exit(self):
+        node = model.Node.new("nodeexit", "1.1.1.1", is_exit=True)
+        exit = model.Exit.get("nodeexit")
+        self.assertIs(type(exit), model.Exit)
+        error = model.Exit.get("foobar")
+        self.assertEquals(error, False)
+
+    def test_illegal_ip(self):
+        self.assertRaises(ValueError, model.Exit.new, 'illegal', '1.2.3.lol')
+
+    def test_exit_list(self):
+        model.Node.new("nodeexit", "1.1.1.1", is_exit=True)
+        model.Node.new("NATnode", "1.1.1.2", is_exit=False)
+        model.Exit.new("exit", "1.1.1.3")
+
+        exitnames = [a.name for a in model.Exit.getall()]
+        self.assertTrue("nodeexit" in exitnames)
+        self.assertTrue("NATnode" not in exitnames)
+        self.assertTrue("exit" in exitnames)
             
 
 class TestUser(unittest.TestCase):

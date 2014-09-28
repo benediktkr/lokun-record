@@ -70,6 +70,8 @@ class Node(object):
         self.heartbeat = int(heartbeat)
         enabled = kwargs.get('enabled', False)
         self.enabled = bool(enabled)
+        is_exit = kwargs.get('is_exit', False)
+        self.is_exit = bool(is_exit)
         
     @classmethod
     def get(cls, name):
@@ -80,7 +82,8 @@ class Node(object):
                    selfcheck=l['selfcheck'], throughput=l['throughput'],
                    cpu=l['cpu'], heartbeat=l['heartbeat'],
                    score=l['score'], uptime=l['uptime'],
-                   total_throughput=l['total_throughput'], enabled=l['enabled'])
+                   total_throughput=l['total_throughput'],
+                   enabled=l['enabled'], is_exit=l['is_exit'])
 
     @classmethod
     def auth(cls, name, key):
@@ -92,7 +95,7 @@ class Node(object):
 
     
     @classmethod
-    def new(cls, name, ip):
+    def new(cls, name, ip, is_exit=False):
         lb = cls.get(name)
         if lb:
             raise ValueError("Loadbalancer already exists")
@@ -100,7 +103,7 @@ class Node(object):
             IPAddress(ip)
         except AddrFormatError:
             raise ValueError("ip")
-        newnode = cls(name, ip)
+        newnode = cls(name, ip, is_exit=is_exit)
         newnode.save()
         return newnode
 
@@ -171,7 +174,7 @@ class Node(object):
         DB.get().lb_save(self.name, self.ip, self.usercount,
                          self.heartbeat, self.score, self.selfcheck,
                          self.throughput, self.cpu, self.uptime,
-                         self.total_throughput, self.enabled)
+                         self.total_throughput, self.enabled, self.is_exit)
         
     # :D
     def __iter__(self):
@@ -189,6 +192,7 @@ class Node(object):
         attrs.append(('uptime', self.uptime))
         attrs.append(('cpu', self.cpu))
         attrs.append(('enabled', self.enabled))
+        attrs.append(('is_exit', self.is_exit))
         return iter(attrs)
 
     def __str__(self):
@@ -199,7 +203,65 @@ class Node(object):
 
     def __getitem__(self, key):
         return dict(self)[key]
+
+class Exit(object):
+    def __init__(self, name, ip, comments=""):
+        self.name = str(name)
+        try:
+            IPAddress(ip)
+        except AddrFormatError:
+            raise ValueError("ip")
+        self.ip = str(ip)
+        self.comments = str(comments)
+
+    @classmethod
+    def new(cls, name, ip, comments=""):
+        """Saves a new exit_supplement"""
+        if cls.get(name):
+            raise ValueError("Already exists as exit")
+        newexit = cls(name, ip, comments=comments)
+        newexit.save()
+        return newexit
+
+    @classmethod
+    def get(cls, name):
+        # This object wraps the Node object, so first we check if the exit
+        # exists as a Node. 
+        node = Node.get(name)
+        if node and node.is_exit:
+            return cls(node.name, node.ip)
         
+        row = DB.get().get_exit_supplement(name)
+        if row:
+            return cls(row[0], row[1], comments=row[2])
+        else:
+            return False
+
+    @classmethod
+    def getall(cls):
+        # First, collect all the Nodes what are exits
+        nodes = [cls(n.name, n.ip) for n in NodeList.get() if n.is_exit]
+
+        # Then, get all exit supplements
+        transform = lambda x: cls(x[0], x[1], comments=x[2]) 
+        exits = [transform(a) for a in DB.get().get_all_exit_supplements()]
+
+        return nodes + exits
+
+    def save(self):
+        # Sqlite cannot accept an IPAddress object without a binding (see #17)
+        # so we cast to str. Perhaps use @property and cast implicitly?
+        ip = str(self.ip)
+        DB.get().save_exit_supplement(self.name, ip, self.comments)
+
+    def __iter__(self):
+        attrs = []
+        attrs.append(('name', self.name))
+        attrs.append(('ip', str(self.ip)))
+        return iter(attrs)
+
+    def __dict__(self):
+        return  {'ip': self.ip, 'name': self.name}
     
 class User(object):
     def __init__(self, username, hashed_passwd, db, **kwargs):
@@ -669,26 +731,26 @@ class DB(object):
             raise Exception("Table btcprices empty")
         return float(r[0])
 
-    def lb_save(self, name, ip, userc, heartb, score, selfc, throughp, cpu, uptime, total, enabled):
+    def lb_save(self, name, ip, userc, heartb, score, selfc, throughp, cpu, uptime, total, enabled, is_exit):
         sql = """insert or replace
                  into loadbalancing(name, ip, usercount, heartbeat,
                        score, selfcheck, throughput, cpu, uptime,
-                       total_throughput, enabled)  
-                 values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
-        self.conn.execute(sql, (name, ip, userc, heartb, score, selfc, throughp, cpu, uptime, total, enabled))
+                       total_throughput, enabled, is_exit)  
+                 values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+        self.conn.execute(sql, (name, ip, userc, heartb, score, selfc, throughp, cpu, uptime, total, enabled, is_exit))
         self.conn.commit()
 
     def lb_get(self, name):
         sql = """select name, ip, score, usercount, selfcheck, 
                         throughput, cpu, heartbeat, uptime,
-                        total_throughput, enabled
+                        total_throughput, enabled, is_exit
                  from loadbalancing where name=?"""
         result = self.conn.execute(sql, (name,)).fetchone()
         if result == None:
             return None
         fields = ["name", "ip", "score", "usercount", "selfcheck",
                   "throughput", "cpu", "heartbeat", "uptime",
-                  "total_throughput", "enabled"]
+                  "total_throughput", "enabled", "is_exit"]
         d = dict(zip(fields, result))
         return d
 
@@ -715,6 +777,22 @@ class DB(object):
         self.conn.execute(sql, (mailid, ))
         self.conn.commit()
 
+
+    def save_exit_supplement(self, name, ip, comments):
+        sql = "insert or replace into exit_supplement(name, ip, comments) values(?, ?, ?)"
+        self.conn.execute(sql, (name, ip, comments))
+        self.conn.commit()
+
+    def get_exit_supplement(self, name):
+        sql = "select name, ip, comments from exit_supplement where name=?"
+        c = self.conn.execute(sql, (name, ))
+        return c.fetchone()
+
+    def get_all_exit_supplements(self):
+        sql = "select name, ip, comments from exit_supplement"
+        c = self.conn.execute(sql)
+        return c.fetchall()
+
 def new_db(name):
     if os.path.exists(name):
         os.remove(name)
@@ -736,15 +814,18 @@ def mktables(conn):
                      credit_btc real not null,
                      sub_end text not null)""")
     c.execute("""create table invitekey (key text primary key)""")
-    c.execute("""create table apikeys (
+    # will be moved to lokun-billing
+    c.execute("""create table apikeys (    
                      key text primary key,
                      status text not null,
                      name text)""") # was "comment"
+    # will probably be moved to lokun-billing
     c.execute("""create table btcprices (
                      id integer primary key autoincrement,
                      btc_isk real not null,
                      btc_price real not null,
                      timestamp datetime not null)""")
+    # will probably be moved to lokun-billing
     c.execute("""create table btcaddrs (
                      id integer primary key autoincrement,
                      addr text unique,
@@ -760,6 +841,12 @@ def mktables(conn):
                      cpu real not null default 0.0,
                      uptime text not null default '0d 0h',
                      total_throughput integer not null default 0,
-                     enabled integer not null default 0)""")
+                     enabled integer not null default 0,
+                     is_exit integer not null default 0)""")
+    # will be moved to lokun-billing
     c.execute("""create table paymentbot (
                      mailid int primary key)""")
+    c.execute("""create table exit_supplement(
+                     name text not null default "",
+                     ip text not null default "",
+                     comments text not null default "")""")
