@@ -178,9 +178,6 @@ class Node(object):
                          self.throughput, self.cpu, self.uptime,
                          self.total_throughput, self.enabled, self.is_exit)
 
-    def deposit(self, amount, method):
-        pass
-        
     # :D
     def __iter__(self):
         attrs = []
