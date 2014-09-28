@@ -194,6 +194,7 @@ def vpn_report(name):
     log("Report for a user recieved (user disconnected from {0})".format(keyinfo.name))
     return {}
 
+
 #----------
 # /nodes/
 #----------
@@ -212,18 +213,18 @@ def node_auth(name):
 @post('/nodes')
 def getallnodes():
     key_auth()
-    nodes = lambda nl: [dict(node) for node in nl]
+    transform = lambda nl: [dict(node) for node in nl]
 
     if not request.params.filter or request.params.filter == "all":
-        return {'data': nodes(model.NodeList.get()) }    
+        return {'data': transform(model.NodeList.get()) }    
     elif request.params.filter == "best":
-        return {'data': nodes(model.NodeList.best()) }
+        return {'data': transform(model.NodeList.best()) }
     elif request.params.filter == "alive":
-        return {'data': nodes(model.NodeList.best()) }
+        return {'data': transform(model.NodeList.best()) }
     elif request.params.filter == "down":
-        return {'data': nodes(model.NodeList.down()) }
+        return {'data': transform(model.NodeList.down()) }
     elif request.params.fitler == "disabled":
-        return {'data': nodes(model.NodeList.disabled()) }
+        return {'data': transform(model.NodeList.disabled()) }
     else:
         abort(400, "Invalid filter")
 
@@ -279,8 +280,25 @@ def putnode(name):
     return {}
 
 # ---------------
+# /exits/
+# ---------------
+
+@get('/exits')
+def getallexits():
+    return {'data': [dict(a) for a in model.Exit.getall()]}
+
+@get('/exits/<name>')
+def getexit(name):
+    exit = model.Exit.get(name)
+    if not exit:
+        abort(404, "Not found")
+    return dict(exit)
+    
+
+# ---------------
 # /lokun/
 # ---------------
+
 @get('/lokun/loadbalancer')
 def loadbalancer():
     try:
@@ -294,10 +312,7 @@ def loadbalancer():
 @get('/lokun/exits')
 def exits():
     response.content_type="application/json"
-    ips = ['46.149.23.163',   # gq account: lokun0
-           '46.149.20.225',   # gq account: lokun
-           '79.134.255.166',  # datacell vps vpn30
-           '37.235.49.17']    # edis vps vpn20
+    ips = [a.ip for a in model.Exit.getall()]
     return {'data': ips}
 
 @get('/lokun/connected')

@@ -207,7 +207,11 @@ class Node(object):
 class Exit(object):
     def __init__(self, name, ip, comments=""):
         self.name = str(name)
-        self.ip = IPAddress(ip)
+        try:
+            IPAddress(ip)
+        except AddrFormatError:
+            raise ValueError("ip")
+        self.ip = str(ip)
         self.comments = str(comments)
 
     @classmethod
@@ -253,9 +257,11 @@ class Exit(object):
     def __iter__(self):
         attrs = []
         attrs.append(('name', self.name))
-        attrs.append(('ip', self.ip))
-        attrs.append(('comments', self.comments))
+        attrs.append(('ip', str(self.ip)))
         return iter(attrs)
+
+    def __dict__(self):
+        return  {'ip': self.ip, 'name': self.name}
     
 class User(object):
     def __init__(self, username, hashed_passwd, db, **kwargs):

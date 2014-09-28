@@ -169,7 +169,8 @@ class TestExit(unittest.TestCase):
         self.assertIs(type(testexit.name), str)
 
         self.assertEquals(testexit.ip, ip)
-        self.assertIs(type(testexit.ip), IPAddress)
+        #self.assertIs(type(testexit.ip), IPAddress)
+        self.assertIs(type(testexit.ip), str)
 
         self.assertEquals(testexit.comments, comments)
         self.assertIs(type(testexit.comments), str)
@@ -189,6 +190,9 @@ class TestExit(unittest.TestCase):
         self.assertIs(type(exit), model.Exit)
         error = model.Exit.get("foobar")
         self.assertEquals(error, False)
+
+    def test_illegal_ip(self):
+        self.assertRaises(ValueError, model.Exit.new, 'illegal', '1.2.3.lol')
 
     def test_exit_list(self):
         model.Node.new("nodeexit", "1.1.1.1", is_exit=True)
