@@ -260,17 +260,18 @@ def putnode(name):
         abort(400, "Must include IP address")
     if model.Node.exists(name):
         try:
-            log("Changed IP for a node")
             node = node_auth(name)
             node.ip = request.forms["ip"]
             node.save()
+            log("Changed IP for a node")
             return dict(node)
         except ValueError as e:
             errstatus(e)
             return {'error': e.message}
     else:
         try:
-            node = model.Node.new(name, request.forms["ip"])
+            is_exit = request.forms.is_exit or False
+            node = model.Node.new(name, request.forms["ip"], is_exit=is_exit)
             apikey = model.APIKey.new(name, status="new")
             log("Created a new node. API key status set to 'new'")
             return dict({'secret': apikey.key}, **dict(node))
