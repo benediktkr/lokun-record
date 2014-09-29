@@ -271,59 +271,73 @@ class Deposit(object):
         self.depositid = kwargs.get('depositid', 0)
         self.date = date.today().isoformat()
         self.username = kwargs.get('username', '')
-        self.amount = kwargs.get('amount')
+        self.amount = int(kwargs.get('amount'))
         self.method = kwargs.get('method', '')
         self.vsk = kwargs.get('vsk', 0.0)  # percentage
-        self.fees = kwargs.get('fees', 0)  # amount in isk :/
+        self.fees = int(kwargs.get('fees', 0))  # amount in isk :/
 
     @property
     def vsk_amount(self):
-        return self.amount*self.vsk/100
+        return int(round(self.amount*self.vsk/100))
 
     @property
     def income(self):
         return self.amount - self.vsk_amount - self.fees
 
     @property
-    def isk_string(self):
-        return str(self.amount) + " ISK"
-
-    @property
     def invoice(self):
         return "INVLOK" + str(self.depositid).zfill(5)
 
     def mkinvoice(self):
-        fields = [("method", self.method),
-                  ("amount", self.isk_string),
+        fields = [("account", self.username),
                   ("date", self.date),
-                  ("vsk", self.vsk)]
+                  ("number", self.invoice),
+                  ("method", self.method),
+                  ("amount", str(self.amount) + " ISK"),
+                  ("date", self.date),
+                  ("vsk_perc", str(self.vsk) + " %"),
+                  ("vsk_amount", str(self.vsk_amount) + " ISK")]
+        filename = self.invoice + ".pdf"
         fdf = forge_fdf("", fields, [], [], [])
-        dest = os.path.join(config.reikningar_path, self.invoice)
-        pdftk = ["pdftk", config.reikningar_template, "fill_form", "-", dest, "flatten"]
+        dest = os.path.join(config.reikningar_path, filename)
+        pdftk = ["pdftk",
+                 config.reikningar_template,
+                 "fill_form",
+                 "-",
+                 "output",
+                 dest,
+                 "flatten"]
         proc = Popen(pdftk, stdin=PIPE)
         output = proc.communicate(input=fdf)
         if output[1]: # stderr
             raise IOError(output[1])
+        return filename
 
     def save(self):
         depositid = DB.get().save_deposit(self)
         self.depositid = depositid
         
     @classmethod
-    def new(cls, username, amount, method, vsk=0, fees=0, mkinvoice=True):
+    def new(cls, username, amount, method, **kwargs):
+        vsk = float(kwargs.get('vsk', 0.0))
+        fees = int(kwargs.get('fees', 0))
+        mkinvoice = bool(kwargs.get('mkinvoice', True))
+        deposit = bool(kwargs.get('deposit', True))
+
         user = User.get(username)
         if not user:
             raise ValueError("Unknown username: {0}".format(username))
         # depositid not known until saved
         today = date.today().isoformat()
-        newinv = cls(amount=amount, username=username, method=method, vsk=vsk,
+        newdep = cls(amount=amount, username=username, method=method, vsk=vsk,
                      date=today, fees=fees)
-        newinv.save()
-        user.deposit(amount)
-        user.save()
+        newdep.save()
+        if deposit:
+            user.deposit(amount)
+            user.save()
         if mkinvoice:
-            newinv.mkinvoice()
-        return newinv
+            newdep.mkinvoice()
+        return newdep
 
     @classmethod
     def get(cls, depositid):
@@ -331,30 +345,8 @@ class Deposit(object):
         
         return cls(depositid=row[0], invoice=row[1], date=row[2], username=row[3],
                    amount=row[4], method=row[5], vsk=row[6], fees=row[7])
-        
-    @classmethod
-    def new(cls, username, amount, method, vsk=0, fees=0, mkinvoice=True):
-        user = User.get(username)
-        if not user:
-            raise ValueError("Unknown username: {0}".format(username))
-        # depositid not known until saved
-        today = date.today().isoformat()
-        newinv = cls(amount=amount, username=username, method=method, vsk=vsk,
-                     date=today, fees=fees)
-        newinv.save()
-        user.deposit(amount)
-        user.save()
-        if mkinvoice:
-            newinv.mkinvoice()
-        return newinv
+            
 
-    @classmethod
-    def get(cls, depositid):
-        row = DB.get().select_deposit(depositid)
-        
-        return cls(depositid=row[0], invoice=row[1], date=row[2], username=row[3],
-                   amount=row[4], method=row[5], vsk=row[6], fees=row[7])
-    
 class User(object):
     def __init__(self, username, hashed_passwd, db, **kwargs):
         """Do not construct User directly. Use User.(new|get|auth)"""

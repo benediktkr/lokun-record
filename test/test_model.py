@@ -156,6 +156,7 @@ class TestNode(unittest.TestCase):
 
         self.assertTrue(updatednode.score >= 100)
         self.compare(updatednode, getnode)
+
 class TestExit(unittest.TestCase):
     def setUp(self):
         model.new_db(DB_NAME)
@@ -316,6 +317,12 @@ class TestDeposit(unittest.TestCase):
         self.assertTrue(dep2.depositid > dep1.depositid)
         self.assertIs(type(dep1.depositid), int)
         self.assertIs(type(dep2.depositid), int)
+
+    def test_no_deposit_to_user(self):
+        old_credit_isk = model.User.get("validuser").credit_isk
+        dep1 = model.Deposit.new("validuser", 2000, "testdeposit", deposit=False)
+        self.assertEquals(old_credit_isk, model.User.get("validuser").credit_isk)
+        
 
     def test_vsk(self):
         domestic = model.Deposit.new("validuser", 2000, "testdeposit", vsk=25.5)
