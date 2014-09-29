@@ -156,6 +156,7 @@ class TestNode(unittest.TestCase):
 
         self.assertTrue(updatednode.score >= 100)
         self.compare(updatednode, getnode)
+
 class TestExit(unittest.TestCase):
     def setUp(self):
         model.new_db(DB_NAME)
@@ -271,6 +272,72 @@ class TestUser(unittest.TestCase):
         payinguser.credit_isk = 2000
         payinguser.buy_sub()
         self.assertEquals(payinguser.sub_active, True)
+
+class TestDeposit(unittest.TestCase):
+    def verify(self, testdeposit, depositid, invoice, date, username, amount, method, vsk, fees):
+        self.assertEquals(testdeposit.depositid, depositid)
+        self.assertEquals(testdeposit.invoice, invoice)
+        self.assertEquals(testdeposit.date, date)
+        self.assertEquals(testdeposit.username, username)
+        self.assertEquals(testdeposit.amount, amount)
+        self.assertEquals(testdeposit.method, method)
+        self.assertEquals(testdeposit.vsk, vsk)
+        self.assertEquals(testdeposit.fees, fees)
+
+    def compare(self, dep1, dep2):
+        self.verify(dep1, dep2.depositid, dep2.invoice, dep2.date, dep2.username, dep2.amount, dep2.method, dep2.vsk, dep2.fees)
+
+    def setUp(self):
+        model.new_db(DB_NAME)
+        config.db = DB_NAME
+
+        # not under test
+        self.real_mkinvoice = model.Deposit.mkinvoice
+        model.Deposit.mkinvoice = mock_noop
+
+        # not sure how i feel about this. 
+        model.User.mkkeys = mock_noop
+        model.User.mkinstaller = mock_noop
+        model.User.new("validuser", "_hunter2")
+
+    def tearDown(self):
+        os.remove(DB_NAME)
+
+    def test_invalid_user_deposit(self):
+        self.assertRaises(ValueError, model.Deposit.new, "invaliduesr", 2000, "test")
+
+    def test_valid_user_deposit(self):
+        old_credit_isk = model.User.get("validuser").credit_isk
+        model.Deposit.new("validuser", 2000, "testdeposit")
+        self.assertEquals(old_credit_isk + 2000, model.User.get("validuser").credit_isk)
+
+    def test_rowid_autoincrement(self):
+        dep1 = model.Deposit.new("validuser", 1000, "testdeposit")
+        dep2 = model.Deposit.new("validuser", 1000, "testdeposit")
+        self.assertTrue(dep2.depositid > dep1.depositid)
+        self.assertIs(type(dep1.depositid), int)
+        self.assertIs(type(dep2.depositid), int)
+
+    def test_no_deposit_to_user(self):
+        old_credit_isk = model.User.get("validuser").credit_isk
+        dep1 = model.Deposit.new("validuser", 2000, "testdeposit", deposit=False)
+        self.assertEquals(old_credit_isk, model.User.get("validuser").credit_isk)
+        
+
+    def test_vsk(self):
+        domestic = model.Deposit.new("validuser", 2000, "testdeposit", vsk=25.5)
+        self.assertTrue(domestic.vsk_amount == 2000*0.255)
+        international = model.Deposit.new("validuser", 2000, "testdeposit", vsk=0.0)
+        self.assertTrue(international.vsk_amount == 0 and international.income == 2000)
+
+    def test_fees(self):
+        ccdep = model.Deposit.new("validuser", 2000, "testdeposit", fees=20)
+        self.assertTrue(ccdep.income == 2000-20)
+
+    def test_save_and_get(self):
+        newdep = model.Deposit.new("validuser", 2000, "testdeposit", vsk=7.0, fees=25)
+        getdep = model.Deposit.get(newdep.depositid)
+        self.compare(newdep, getdep)
 
 class TestInviteKey(unittest.TestCase):
     def setUp(self):
