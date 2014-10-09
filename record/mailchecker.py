@@ -1,6 +1,6 @@
 #coding: utf-8
 
-import model
+from model import Deposit, DB
 from Bankmail import *
 import sys
 import sqlite3
@@ -28,25 +28,24 @@ def check(user, passwd):
     i.select()
     status, response = i.search(None, 'ALL')
     mailids = [int(a) for a in response[0].split()]
-    my_mailid = model.DB.get().max_mailid()
+    my_mailid = DB.get().max_mailid()
     new_mailids = [a+1 for a in range(my_mailid, max(mailids))]
 
     for mailid in new_mailids:
-        model.DB.get().add_mailid(mailid)
+        DB.get().add_mailid(mailid)
         f = i.fetch(mailid, '(RFC822)')
         mail = f[1][0][1]
         info = f[1][0][0]
         try:
             b = Bankmail(mail)
-            user = model.User.get(b.username)
-            user.credit_isk += b.amount
-            user.save()
+            # .new() calls .save() :(
+            Deposit.new(b.username, b.amount, "Wire", deposit=True)
             logger.email("Username: {username}\nAmount: {amount}".format(**b.__dict__))
         except NotBankmail as notb:
             log("Skipping {0}: {1}".format(mailid, str(notb)))
             pass
         except ValueError as ve:
-            logger.email("Skipping {0}: ValueError: {1}".format(mailid, ve))
+            logger.email("Skipping {0}: {1}".format(mailid, ve))
         except AttributeError:
             logger.email("User {username} not found. Amount: {amount}. Parser: {bank}".format(**b.__dict__))
         except Exception as e:

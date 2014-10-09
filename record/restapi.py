@@ -54,6 +54,14 @@ def abort(status, text):
     r.status = status
     raise r
 
+def auth(name):
+    if not 'password' in request.forms:
+        abort(400, "Must include a password")
+    try:
+        return model.User.auth(name, request.forms['password'])
+    except ValueError as e:
+        abort(errstatus(e), e.message)
+
 def key_auth(name=""):
     """Authenticates a API key."""
     if not 'secret' in request.forms:
@@ -66,16 +74,6 @@ def key_auth(name=""):
 # ------------
 # /users/
 # ------------
-
-def auth(name):
-    if not 'password' in request.forms:
-        abort(400, "Must include a password")
-    try:
-        return model.User.auth(name, request.forms['password'])
-    except ValueError as e:
-        abort(errstatus(e), e.message)
-
-
 @put('/users/<name>')
 def putuser(name):
     if not 'password' in request.forms:
@@ -106,10 +104,24 @@ def putuser(name):
 
 @post('/users/<name>')
 def getuser(name):
-    """This is POST only because GET shows passwords in url."""
+    """This is POST only because GET shows passwords in url.
+    TODO: Move key to headers"""
     user = auth(name)
     return dict(user)
 
+@put('/users/<name>/credit_isk')
+def putisk(name):
+    #key_auth("billing")
+    if 'isk' not in request.forms:
+        abort(400, "Must include 'isk'")
+    try:
+        user = model.User.get(name)
+        isk = int(request.forms.isk)
+        user.credit_isk += isk
+        user.save()
+        return str(user.credit_isk)
+    except ValueError as ve:
+        abort(errstatus(ve), ve.message)
 
 @post('/users/<name>/config.zip')
 def getconfig(name):
@@ -338,28 +350,40 @@ def status():
 # -----------------
 # /callbacks
 # -----------------
+def calculate_fees(cardtype, amount=2000):
+    if cardtype == "American Express":
+        perc = 0.039 
+    else:
+        perc = 0.029
+    # DalPay always charge 0.15 USD per transaction. 
+    # Now (october 2014) that is ~18 ISK
+    return amount*perc + 18
+
 @post('/callbacks/dalpay')
 def dalpay():
+    # Since deciding to create lokun-billing, this got a
+    # bit.. hacky. 
     try:
         passwd = request.forms["SilentPostPassword"]
         if not sec.compare(passwd, config.dalpay_passwd):
             log("DalPay: Invalid SilentPostPassword")
             abort(401, "Unauthorized")
         message = request.forms["user1"]
+
         dalpay = DalPay.read(message, key=config.dalpay_key)
-        user = model.User.get(dalpay.username)
-        if not user:
-            logger.email("DalPay: Invalid username in ciphertext: " + username)
-            abort(404, "User not found")
-        user.credit_isk += dalpay.amount
-        user.save()
+        cardtype = request.forms["pay_type"]
+        fees = calculate_fees(cardtype, dalpay.amount)
+
+        deposit = model.Deposit.new(dalpay.username, dalpay.amount, cardtype,
+                                    vsk=25.5, fees=fees, deposit=True)
+
         logger.email("DalPay: {0},{1}".format(dalpay.username, dalpay.amount))
 
         return config.dalpay_return
     except ValueError as ve:
-        log(str(ve))
+        logger.email("DalPay: " + str(ve))
         # Do i need to log something more? BK 22.03.2014
-        abort(500, str(ve))
+        return "<!-- error: {0} -->".format(str(ve))
 
 @get('/callbacks/dalpay')
 def getcallbacksdalpay():
