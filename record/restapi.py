@@ -54,6 +54,14 @@ def abort(status, text):
     r.status = status
     raise r
 
+def auth(name):
+    if not 'password' in request.forms:
+        abort(400, "Must include a password")
+    try:
+        return model.User.auth(name, request.forms['password'])
+    except ValueError as e:
+        abort(errstatus(e), e.message)
+
 def key_auth(name=""):
     """Authenticates a API key."""
     if not 'secret' in request.forms:
@@ -66,15 +74,6 @@ def key_auth(name=""):
 # ------------
 # /users/
 # ------------
-
-def auth(name):
-    if not 'password' in request.forms:
-        abort(400, "Must include a password")
-    try:
-        return model.User.auth(name, request.forms['password'])
-    except ValueError as e:
-        abort(errstatus(e), e.message)
-
 @put('/users/<name>')
 def putuser(name):
     if not 'password' in request.forms:
@@ -105,10 +104,24 @@ def putuser(name):
 
 @post('/users/<name>')
 def getuser(name):
-    """This is POST only because GET shows passwords in url."""
+    """This is POST only because GET shows passwords in url.
+    TODO: Move key to headers"""
     user = auth(name)
     return dict(user)
 
+@put('/users/<name>/credit_isk')
+def putisk(name):
+    #key_auth("billing")
+    if 'isk' not in request.forms:
+        abort(400, "Must include 'isk'")
+    try:
+        user = model.User.get(name)
+        isk = int(request.forms.isk)
+        user.credit_isk += isk
+        user.save()
+        return str(user.credit_isk)
+    except ValueError as ve:
+        abort(errstatus(ve), ve.message)
 
 @post('/users/<name>/config.zip')
 def getconfig(name):
