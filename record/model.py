@@ -61,6 +61,7 @@ class Node(object):
         self.ip = str(ip)
         self.throughput = kwargs.get('throughput', 0)
         self.total_throughput = kwargs.get('total_throughput', 0)
+        self.max_throughput = kwargs.get('max_throughput', 0)
         self._uptime = kwargs.get('uptime', '0d 0h')
         self.cpu = kwargs.get('cpu', 0.0)
         self._usercount = kwargs.get('usercount', 0)
@@ -85,6 +86,7 @@ class Node(object):
                    cpu=l['cpu'], heartbeat=l['heartbeat'],
                    score=l['score'], uptime=l['uptime'],
                    total_throughput=l['total_throughput'],
+                   max_throughput=l['max_throughput'],
                    enabled=l['enabled'], is_exit=l['is_exit'])
 
     @classmethod
@@ -97,7 +99,7 @@ class Node(object):
 
     
     @classmethod
-    def new(cls, name, ip, is_exit=False):
+    def new(cls, name, ip, is_exit=False,max_throughput=0):
         lb = cls.get(name)
         if lb:
             raise ValueError("Loadbalancer already exists")
@@ -105,7 +107,7 @@ class Node(object):
             IPAddress(ip)
         except AddrFormatError:
             raise ValueError("ip")
-        newnode = cls(name, ip, is_exit=is_exit)
+        newnode = cls(name, ip, is_exit=is_exit,max_throughput=max_throughput)
         newnode.save()
         return newnode
 
@@ -176,7 +178,8 @@ class Node(object):
         DB.get().lb_save(self.name, self.ip, self.usercount,
                          self.heartbeat, self.score, self.selfcheck,
                          self.throughput, self.cpu, self.uptime,
-                         self.total_throughput, self.enabled, self.is_exit)
+                         self.total_throughput, self.max_throughput,
+                         self.enabled, self.is_exit)
 
     # :D
     def __iter__(self):
@@ -191,6 +194,7 @@ class Node(object):
         attrs.append(('alive', self.alive))
         attrs.append(('throughput', self.throughput))
         attrs.append(('total_throughput', self.total_throughput))
+        attrs.append(('max_throughput', self.max_throughput))
         attrs.append(('uptime', self.uptime))
         attrs.append(('cpu', self.cpu))
         attrs.append(('enabled', self.enabled))
@@ -819,26 +823,26 @@ class DB(object):
         return float(r[0])
 
 
-    def lb_save(self, name, ip, userc, heartb, score, selfc, throughp, cpu, uptime, total, enabled, is_exit):
+    def lb_save(self, name, ip, userc, heartb, score, selfc, throughp, cpu, uptime, total, maxt, enabled, is_exit):
         sql = """insert or replace
                  into loadbalancing(name, ip, usercount, heartbeat,
                        score, selfcheck, throughput, cpu, uptime,
-                       total_throughput, enabled, is_exit)  
-                 values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
-        self.conn.execute(sql, (name, ip, userc, heartb, score, selfc, throughp, cpu, uptime, total, enabled, is_exit))
+                       total_throughput, max_throughput, enabled, is_exit)  
+                 values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+        self.conn.execute(sql, (name, ip, userc, heartb, score, selfc, throughp, cpu, uptime, total, maxt, enabled, is_exit))
         self.conn.commit()
 
     def lb_get(self, name):
         sql = """select name, ip, score, usercount, selfcheck, 
                         throughput, cpu, heartbeat, uptime,
-                        total_throughput, enabled, is_exit
+                        total_throughput, max_throughput, enabled, is_exit
                  from loadbalancing where name=?"""
         result = self.conn.execute(sql, (name,)).fetchone()
         if result == None:
             return None
         fields = ["name", "ip", "score", "usercount", "selfcheck",
                   "throughput", "cpu", "heartbeat", "uptime",
-                  "total_throughput", "enabled", "is_exit"]
+                  "total_throughput", "max_throughput", "enabled", "is_exit"]
         d = dict(zip(fields, result))
         return d
 
@@ -948,6 +952,7 @@ def mktables(conn):
                      cpu real not null default 0.0,
                      uptime text not null default '0d 0h',
                      total_throughput integer not null default 0,
+                     max_throughput integer not null default 0,
                      enabled integer not null default 0,
                      is_exit integer not null default 0)""")
     # will be moved to lokun-billing
