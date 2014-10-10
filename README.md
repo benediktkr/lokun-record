@@ -30,6 +30,7 @@ Dependencies from apt:
  * `openssl` 
  * `python-dev`
  * `build-essentials`
+ * `pdftk` 
 
 DalPay crypto protocol
 ======
