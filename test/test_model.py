@@ -131,8 +131,18 @@ class TestNode(unittest.TestCase):
         phys.save()
         self.assertTrue(phys.score < small.score)
         #print "phys: {0}, small: {1}".format(phys.score, small.score)
+        # real world data
+        phys.cpu = 0
+        phys.usercount = 3
+        phys.throughput = 1750*1000
+        phys.save()
+        small.cpu = 20
+        small.usercount = 3
+        small.throughput = 2290 * 1000
+        small.save()
+        self.assertTrue(phys.score < small.score)
+                
         
-
     def test_nodelist(self):
         downnode = model.Node.new('down', '1.1.1.1')
         downnode.enabled = True
