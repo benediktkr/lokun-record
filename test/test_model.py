@@ -22,7 +22,7 @@ def mock_false(*args, **kwargs):
 
 
 class TestNode(unittest.TestCase):
-    def verify(self, testnode, name, ip, heartbeat=0, selfcheck=False, uptime='0d 0h', usercount=0, cpu=0.0, enabled=False, is_exit=False):
+    def verify(self, testnode, name, ip, heartbeat=0, selfcheck=False, uptime='0d 0h', usercount=0, cpu=0.0, enabled=False, is_exit=False, max_throughput=0):
             self.assertEquals(testnode.name, name)
             self.assertEquals(testnode.ip, ip)
             self.assertEquals(testnode.heartbeat, heartbeat)
@@ -32,6 +32,7 @@ class TestNode(unittest.TestCase):
             self.assertEquals(testnode.cpu, cpu)
             self.assertEquals(testnode.enabled, enabled)
             self.assertEquals(testnode.is_exit, is_exit)
+            self.assertEquals(testnode.max_throughput, max_throughput)
             self.assertTrue(type(testnode.name) in [str, unicode])
             self.assertTrue(type(testnode.ip) in [str, unicode])
             self.assertIs(type(testnode.heartbeat), int)
@@ -42,9 +43,10 @@ class TestNode(unittest.TestCase):
             self.assertIs(type(testnode.enabled), bool)
             self.assertIs(type(testnode.is_exit), bool)
             self.assertTrue(testnode.score >= 0)
+            self.assertIs(type(testnode.max_throughput), int)
 
     def compare(self, node1, node2):
-        self.verify(node1, node2.name, node2.ip, heartbeat=node2.heartbeat, selfcheck=node2.selfcheck, uptime=node2.uptime, usercount=node2.usercount, cpu=node2.cpu, enabled=node2.enabled, is_exit=node2.is_exit)
+        self.verify(node1, node2.name, node2.ip, heartbeat=node2.heartbeat, selfcheck=node2.selfcheck, uptime=node2.uptime, usercount=node2.usercount, cpu=node2.cpu, enabled=node2.enabled, is_exit=node2.is_exit, max_throughput=node2.max_throughput)
 
     def setUp(self):
         model.new_db(DB_NAME)
@@ -103,6 +105,34 @@ class TestNode(unittest.TestCase):
         exit2 = model.Node.get('exit')
         self.compare(exit1, exit2)
 
+    def test_max_throughput(self):
+        """Tests the property 'max_throughput'. Does the same
+        as `test_is_exit`, which tests another property, 'is_exit'."""
+        n1 = model.Node.new('n1', '1.1.1.1')
+        n1.max_throughput = 2000
+        n1.save()
+        self.compare(n1, model.Node.get('n1'))
+        #  max_throughput specific
+        n1.total_throughput = 2000
+        self.assertTrue(n1.score == 101)
+        n1.total_throughput = 1900
+        self.assertTrue(n1.score == 100) 
+
+    def test_score(self):
+        small = model.Node.new('small', '1.1.1.1')
+        phys = model.Node.new('phys', '1.1.1.2')
+        small.throughput = 1230 * 1000
+        small.usercount = 5
+        small.cpu = 80
+        small.save()
+        phys.throughput = 1230*1000
+        phys.cpu = 23
+        phys.usercount = 5
+        phys.save()
+        self.assertTrue(phys.score < small.score)
+        #print "phys: {0}, small: {1}".format(phys.score, small.score)
+        
+
     def test_nodelist(self):
         downnode = model.Node.new('down', '1.1.1.1')
         downnode.enabled = True
@@ -147,14 +177,14 @@ class TestNode(unittest.TestCase):
         getnode.enabled = True
         getnode.save()
         
-        self.assertTrue(getnode.score >= 100)
+        self.assertTrue(getnode.score >= 80)
 
         self.verify(getnode, "node", "1.1.1.1", usercount=2, heartbeat=heartbeat, uptime="1d 0h", cpu=80.73, selfcheck=True, enabled=True)
         
         getnode.save()
         updatednode = model.Node.get("node")
 
-        self.assertTrue(updatednode.score >= 100)
+        self.assertTrue(updatednode.score >= 80)
         self.compare(updatednode, getnode)
 
 class TestExit(unittest.TestCase):

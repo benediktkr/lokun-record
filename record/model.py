@@ -22,6 +22,7 @@ SUB_DL_BYTES = 1000000000000
 SUB_LENGTH_DAYS = 30
 # TODO: This variable now also exists in config
 SUB_PRICE_ISK = config.isk_price
+BW_MARGIN = 0.9
 
 class NotEnoughFundsError(Exception):
     pass
@@ -142,8 +143,22 @@ class Node(object):
     
     @property
     def score(self):
-        s = self.usercount + int(self.cpu//10) if self.cpu < 75.0 else 100
-        return s
+        if self.max_throughput:
+            if self.total_throughput >= self.max_throughput:
+                return 101
+            if self.total_throughput > int(BW_MARGIN*self.max_throughput):
+                return 100
+        if self.cpu > 80:
+            return int(self.cpu)
+        cpu = int(self.cpu)
+        score = cpu//10
+        if self.usercount:
+            score += (cpu // self.usercount) +  self.throughput // 10**6
+            
+        ## IDEA
+        ## if self.usercount > avergage_usercount(servercount, active_users)
+
+        return score
 
     @property
     def alive(self):
