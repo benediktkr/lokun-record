@@ -140,7 +140,8 @@ class Node(object):
         if value < 0:
             raise ValueError("Usercount must be >= 0")
         self._usercount = value
-    
+
+            
     @property
     def score(self):
         if self.max_throughput:
@@ -148,17 +149,19 @@ class Node(object):
                 return 101
             if self.total_throughput > int(BW_MARGIN*self.max_throughput):
                 return 100
-        if self.cpu > 80:
-            return int(self.cpu)
+        
         cpu = int(self.cpu)
-        score = cpu//10
-        if self.usercount:
-            score += (cpu // self.usercount) +  self.throughput // 10**6
+        
+        if self.cpu > 80:
+            return cpu
+
+        if not self.usercount:
+            return cpu//10
+
+        return cpu//self.usercount + self.throughput//10**6 + cpu//10
             
         ## IDEA
         ## if self.usercount > avergage_usercount(servercount, active_users)
-
-        return score
 
     @property
     def alive(self):
