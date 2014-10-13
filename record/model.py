@@ -269,7 +269,7 @@ class Deposit(object):
     def __init__(self, **kwargs):
         # We creating a new Deposit, the depositid is not known (db autoincrement)
         self.depositid = kwargs.get('depositid', 0)
-        self.date = date.today().isoformat()
+        self.date = kwargs.get('date', date.today().isoformat())
         self.username = kwargs.get('username', '')
         self.amount = int(kwargs.get('amount'))
         self.method = kwargs.get('method', '')
@@ -323,14 +323,14 @@ class Deposit(object):
         fees = int(kwargs.get('fees', 0))
         mkinvoice = bool(kwargs.get('mkinvoice', True))
         deposit = bool(kwargs.get('deposit', True))
+        date = str(kwargs.get('date', date.today().isoformat()))
 
         user = User.get(username)
         if not user:
             raise ValueError("Unknown username: {0}".format(username))
         # depositid not known until saved
-        today = date.today().isoformat()
         newdep = cls(amount=amount, username=username, method=method, vsk=vsk,
-                     date=today, fees=fees)
+                     date=date, fees=fees)
         newdep.save()
         if deposit:
             user.deposit(amount)
