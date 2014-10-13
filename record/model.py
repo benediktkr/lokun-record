@@ -323,14 +323,14 @@ class Deposit(object):
         fees = int(kwargs.get('fees', 0))
         mkinvoice = bool(kwargs.get('mkinvoice', True))
         deposit = bool(kwargs.get('deposit', True))
-        date = str(kwargs.get('date', date.today().isoformat()))
+        _date = str(kwargs.get('date', date.today().isoformat()))
 
         user = User.get(username)
         if not user:
             raise ValueError("Unknown username: {0}".format(username))
         # depositid not known until saved
         newdep = cls(amount=amount, username=username, method=method, vsk=vsk,
-                     date=date, fees=fees)
+                     date=_date, fees=fees)
         newdep.save()
         if deposit:
             user.deposit(amount)
