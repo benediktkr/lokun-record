@@ -136,7 +136,6 @@ class TestNode(unittest.TestCase):
         self.assertEquals(limitless.throughput_limit, 0)
         self.assertTrue(limitless.within_limit == False)
         
-
     def test_score(self):
         small = model.Node.new('small', '1.1.1.1')
         phys = model.Node.new('phys', '1.1.1.2')
