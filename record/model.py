@@ -141,13 +141,26 @@ class Node(object):
             raise ValueError("Usercount must be >= 0")
         self._usercount = value
 
-            
+    @property
+    def throughput_limit(self):
+        if not self.max_throughput:
+            return 0
+        else:
+            return int(BW_MARGIN*self.max_throughput)
+
+    @property
+    def within_limit(self):
+        if not self.max_throughput:
+            return False
+        else:
+            return self.total_throughput > self.throughput_limit
+
     @property
     def score(self):
-        if self.max_throughput:
+        if self.max_throughput and self.within_limit:
             if self.total_throughput >= self.max_throughput:
                 return 101
-            if self.total_throughput > int(BW_MARGIN*self.max_throughput):
+            else:
                 return 100
         
         cpu = int(self.cpu)
@@ -176,7 +189,7 @@ class Node(object):
     def down(self):
         # A disabled node isn't down (doesnt affect status)
         return self.enabled and not self.alive
-        
+
 
     @property
     def heartbeat_age(self):

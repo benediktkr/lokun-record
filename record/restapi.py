@@ -4,6 +4,7 @@ import os
 import json
 import time 
 from math import ceil
+from pprint import pformat
 
 import bottle
 from bottle import route, request, response, put, post, get, HTTPError, hook
@@ -243,27 +244,31 @@ def getallnodes():
 @post('/nodes/<name>')
 def postnode(name):
     node = node_auth(name)
-    heartbeat = int(time.time())
     old_usercount = int(node.usercount)
+    old_total = int(node.total_throughput) # deep copy
     try:
         # coercing the types since sqlite doesn't give a shit
         # about types
-        usercount = int(request.forms['usercount'])
-        node.cpu = float(request.forms['cpu'])
-        node.usercount = int(request.forms['usercount'])
-        node.heartbeat = heartbeat
-        node.selfcheck = request.forms['selfcheck'].lower() == "true" 
-        node.throughput = int(request.forms['throughput'])
-        node.total_throughput = int(request.forms.total_throughput)
-        node.uptime = request.forms.uptime
-        node.save()
+        node.update(usercount = int(request.forms['usercount']),
+                    selfcheck = bool(request.forms['selfcheck'].lower() == "true"),
+                    throughput = int(request.forms['throughput']),
+                    total_throughput = int(request.forms.total_throughput),
+                    uptime = request.forms.uptime,
+                    cpu = float(request.forms['cpu']))
+        
+        if node.within_limit and old_total < node.throughput_limit:
+            message = "throughput_limit: {0}, {1} GB\n\n{2}"
+            pretty = pformat(dict(node))
+            logger.email(message.format(node.name, node.total_throughput, pretty))
+
+        return {'status': 'ok',
+                'userdiff': node.usercount - old_usercount,
+                'score': node.score,
+                'heartbeat': heartbeat}
+
     except (ValueError, KeyError) as error:
         abort(400, str(error))
 
-    return {'status': 'ok',
-            'userdiff': node.usercount - old_usercount,
-            'score': node.score,
-            'heartbeat': heartbeat}
 
 
 @put('/nodes/<name>')

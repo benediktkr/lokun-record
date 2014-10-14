@@ -112,11 +112,30 @@ class TestNode(unittest.TestCase):
         n1.max_throughput = 2000
         n1.save()
         self.compare(n1, model.Node.get('n1'))
+
+    def test_throughput_properties(self):
+        n1 = model.Node.new('n1', '1.1.1.1')
+        n1.max_throughput = 2000
+        n1.save()
         #  max_throughput specific
+        self.assertTrue(not n1.within_limit)
+        self.assertTrue(n1.score < 100)
+        # at the max limit
         n1.total_throughput = 2000
         self.assertTrue(n1.score == 101)
+        # within limit
         n1.total_throughput = 1900
-        self.assertTrue(n1.score == 100) 
+        self.assertTrue(n1.score == 100)
+        self.assertEquals(n1.throughput_limit, model.BW_MARGIN*n1.max_throughput)
+        self.assertTrue(n1.within_limit)
+        # no limits
+        limitless = model.Node.new('limitless', '1.1.1.2') # also a decent movie
+        limitless.max_throughput = 0
+        limitless.total_throughput = 3000
+        limitless.save()
+        self.assertEquals(limitless.throughput_limit, 0)
+        self.assertTrue(limitless.within_limit == False)
+        
 
     def test_score(self):
         small = model.Node.new('small', '1.1.1.1')
@@ -141,6 +160,11 @@ class TestNode(unittest.TestCase):
         small.throughput = 2290 * 1000
         small.save()
         self.assertTrue(phys.score < small.score)
+        small.max_throughput = 1000
+        small.total_throughput = 950
+        self.assertEquals(small.score, 100)
+        small.total_throughput = 1001
+        self.assertEquals(small.score, 101)
                 
         
     def test_nodelist(self):
