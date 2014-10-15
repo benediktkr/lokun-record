@@ -4,6 +4,7 @@ import os
 import json
 import time 
 from math import ceil
+from pprint import pformat
 
 import bottle
 from bottle import route, request, response, put, post, get, HTTPError, hook
@@ -202,6 +203,8 @@ def vpn_report(name):
     if dl < 0:
         abort(400, "dl must be >= 0")
     user.dl_left = user.dl_left - dl
+    if user.dl_left < 0:
+        logger.email(user.username + " actually finished their dl!!")
     user.save()
     log("Report for a user recieved (user disconnected from {0})".format(keyinfo.name))
     return {}
@@ -243,27 +246,31 @@ def getallnodes():
 @post('/nodes/<name>')
 def postnode(name):
     node = node_auth(name)
-    heartbeat = int(time.time())
     old_usercount = int(node.usercount)
+    old_total = int(node.total_throughput) # deep copy
     try:
         # coercing the types since sqlite doesn't give a shit
         # about types
-        usercount = int(request.forms['usercount'])
-        node.cpu = float(request.forms['cpu'])
-        node.usercount = int(request.forms['usercount'])
-        node.heartbeat = heartbeat
-        node.selfcheck = request.forms['selfcheck'].lower() == "true" 
-        node.throughput = int(request.forms['throughput'])
-        node.total_throughput = int(request.forms.total_throughput)
-        node.uptime = request.forms.uptime
-        node.save()
+        node.update(usercount = int(request.forms['usercount']),
+                    selfcheck = bool(request.forms['selfcheck'].lower() == "true"),
+                    throughput = int(request.forms['throughput']),
+                    total_throughput = int(request.forms.total_throughput),
+                    uptime = request.forms.uptime,
+                    cpu = float(request.forms['cpu']))
+        
+        if node.within_limit and old_total < node.throughput_limit:
+            message = "throughput_limit: {0}, {1} GB\n\n{2}"
+            pretty = pformat(dict(node))
+            logger.email(message.format(node.name, node.total_throughput, pretty))
+
+        return {'status': 'ok',
+                'userdiff': node.usercount - old_usercount,
+                'score': node.score,
+                'heartbeat': heartbeat}
+
     except (ValueError, KeyError) as error:
         abort(400, str(error))
 
-    return {'status': 'ok',
-            'userdiff': node.usercount - old_usercount,
-            'score': node.score,
-            'heartbeat': heartbeat}
 
 
 @put('/nodes/<name>')
@@ -282,8 +289,9 @@ def putnode(name):
             return {'error': e.message}
     else:
         try:
-            is_exit = request.forms.is_exit or False
-            node = model.Node.new(name, request.forms["ip"], is_exit=is_exit)
+            is_exit = request.forms.is_exit.lower() == "true"
+            max_t = int(request.forms.max_throughput or 0)
+            node = model.Node.new(name, request.forms["ip"], is_exit, max_t)
             apikey = model.APIKey.new(name, status="new")
             log("Created a new node. API key status set to 'new'")
             return dict({'secret': apikey.key}, **dict(node))
