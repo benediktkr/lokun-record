@@ -266,7 +266,7 @@ def postnode(name):
         return {'status': 'ok',
                 'userdiff': node.usercount - old_usercount,
                 'score': node.score,
-                'heartbeat': heartbeat}
+                'heartbeat': node.heartbeat}
 
     except (ValueError, KeyError) as error:
         abort(400, str(error))
