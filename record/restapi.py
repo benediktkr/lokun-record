@@ -203,6 +203,8 @@ def vpn_report(name):
     if dl < 0:
         abort(400, "dl must be >= 0")
     user.dl_left = user.dl_left - dl
+    if user.dl_left < 0:
+        logger.email(user.username + " actually finished their dl!!")
     user.save()
     log("Report for a user recieved (user disconnected from {0})".format(keyinfo.name))
     return {}
@@ -287,8 +289,9 @@ def putnode(name):
             return {'error': e.message}
     else:
         try:
-            is_exit = request.forms.is_exit or False
-            node = model.Node.new(name, request.forms["ip"], is_exit=is_exit)
+            is_exit = request.forms.is_exit.lower() == "true"
+            max_t = int(request.forms.max_throughput or 0)
+            node = model.Node.new(name, request.forms["ip"], is_exit, max_t)
             apikey = model.APIKey.new(name, status="new")
             log("Created a new node. API key status set to 'new'")
             return dict({'secret': apikey.key}, **dict(node))
