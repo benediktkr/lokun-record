@@ -164,6 +164,11 @@ class TestNode(unittest.TestCase):
         self.assertTrue(small.score > 100)
         small.total_throughput = 1001
         self.assertTrue(small.score > 150)
+        # temp test
+        zerot = model.Node.new('zerot', '1.1.1.3')
+        zerot.throughput = 0
+        zerot.usercount = 1
+        zerot.score # Shouldn't raise a div by null exception
                 
         
     def test_nodelist(self):
