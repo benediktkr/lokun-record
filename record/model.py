@@ -157,25 +157,23 @@ class Node(object):
 
     @property
     def score(self):
+        constant = 0
         if self.max_throughput and self.within_limit:
             if self.total_throughput >= self.max_throughput:
-                return 101
+                constant = 150
             else:
-                return 100
+                constant = 100
         
-        cpu = int(self.cpu)
+        cpu = int(self.cpu) or 1
         
         if self.cpu > 80:
-            return cpu
+            return constant + cpu
 
         if not self.usercount:
-            return cpu//10
+            return constant + cpu//10
 
-        return cpu//self.usercount + self.throughput//10**6 + cpu//10
+        return constant + self.usercount + cpu // (self.throughput//10**6) + cpu//10
             
-        ## IDEA
-        ## if self.usercount > avergage_usercount(servercount, active_users)
-
     @property
     def alive(self):
         if not self.selfcheck:
