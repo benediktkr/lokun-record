@@ -4,6 +4,8 @@ import socket
 
 from requests import get as httpget
 
+"""This seemed like a good idea at the time..."""
+
 class Status(str):
     statusmap = {'green': 0, 'yellow': 1, 'red': 2}
 

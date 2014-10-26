@@ -204,7 +204,7 @@ def vpn_report(name):
         abort(400, "dl must be >= 0")
     user.dl_left = user.dl_left - dl
     if user.dl_left < 0:
-        logger.email(user.username + " actually finished their dl!!")
+        logger.email("dl_finished: " + ",".join(user.username, user.sub_end))
     user.save()
     log("Report for a user recieved (user disconnected from {0})".format(keyinfo.name))
     return {}
