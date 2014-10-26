@@ -54,6 +54,11 @@ class NodeList(list):
     def disabled(cls):
         all_nodes = cls.get()
         return cls([a for a in all_nodes if not a.enabled]) 
+
+    @classmethod
+    def enabled(cls):
+        all_nodes = cls.get()
+        return cls([a for a in all_nodes if a.enabled])
     
 
 class Node(object):
