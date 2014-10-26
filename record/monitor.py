@@ -16,7 +16,7 @@ def main():
     state = StatusState.check()
     if time() % 3600 == 0:
         counts = [a.usercount for a in model.NodeList.enabled()]
-        logger.log("Usercount: " + sum(count))
+        logger.log("Usercount: " + str(sum(counts)))
     if state.status != "green":
         # a systems property would be really nice
         status = state.status.upper()
