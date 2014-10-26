@@ -14,7 +14,7 @@ status = "green"
 
 def main():
     state = StatusState.check()
-    if time() % 3600 == 0:
+    if time() % 3600 < 5:
         counts = [a.usercount for a in model.NodeList.enabled()]
         logger.log("Usercount: " + str(sum(counts)))
     if state.status != "green":
