@@ -122,10 +122,10 @@ class TestNode(unittest.TestCase):
         self.assertTrue(n1.score < 100)
         # at the max limit
         n1.total_throughput = 2000
-        self.assertTrue(n1.score == 101)
+        self.assertTrue(n1.score >= 150)
         # within limit
         n1.total_throughput = 1900
-        self.assertTrue(n1.score == 100)
+        self.assertTrue(n1.score >= 100)
         self.assertEquals(n1.throughput_limit, model.BW_MARGIN*n1.max_throughput)
         self.assertTrue(n1.within_limit)
         # no limits
@@ -161,9 +161,15 @@ class TestNode(unittest.TestCase):
         self.assertTrue(phys.score < small.score)
         small.max_throughput = 1000
         small.total_throughput = 950
-        self.assertEquals(small.score, 100)
+        self.assertTrue(small.score > 100)
         small.total_throughput = 1001
-        self.assertEquals(small.score, 101)
+        self.assertTrue(small.score > 150)
+        # temp test
+        zerot = model.Node.new('zerot', '1.1.1.3')
+        zerot.throughput = 0
+        zerot.usercount = 0
+        zerot.cpu = 0.0
+        zerot.score # Shouldn't raise a div by null exception
                 
         
     def test_nodelist(self):
