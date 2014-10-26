@@ -167,7 +167,8 @@ class TestNode(unittest.TestCase):
         # temp test
         zerot = model.Node.new('zerot', '1.1.1.3')
         zerot.throughput = 0
-        zerot.usercount = 1
+        zerot.usercount = 0
+        zerot.cpu = 0.0
         zerot.score # Shouldn't raise a div by null exception
                 
         

@@ -164,15 +164,14 @@ class Node(object):
             else:
                 constant = 100
         
-        cpu = int(self.cpu) or 1
+        cpu = int(self.cpu) if self.cpu > 1 else 1
         
-        if self.cpu > 80:
-            return constant + cpu
-
         if not self.usercount:
             return constant + cpu//10
 
-        return constant + self.usercount + cpu // ((self.throughput//10**6) or 1) + cpu//10
+        bw = self.throughput//10**6 or 1
+
+        return constant + self.usercount + cpu//bw + cpu//10
             
     @property
     def alive(self):
