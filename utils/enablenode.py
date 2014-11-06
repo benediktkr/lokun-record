@@ -21,7 +21,8 @@ def main():
     if len(sys.argv) == 2:
         enabled = True
     elif len(sys.argv) == 3:
-        enabled = sys.argv[2] == "-d"
+        disable = sys.argv[2] == "-d"
+        enabled = not disable
     else:
         print usage
         sys.exit(1)
