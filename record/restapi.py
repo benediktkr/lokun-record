@@ -72,6 +72,11 @@ def key_auth(name=""):
     except ValueError as e:
         abort(403, "Secret not accepted")    
 
+@get('/foo')
+def foo():
+    print request.headers
+    print request.headers.get('Bar')
+
 # ------------
 # /users/
 # ------------
@@ -257,6 +262,7 @@ def postnode(name):
                     total_throughput = int(request.forms.total_throughput),
                     uptime = request.forms.uptime,
                     cpu = float(request.forms['cpu']))
+        log("Updated {0}".format(node.name))
         
         if node.within_limit and old_total < node.throughput_limit:
             message = "throughput_limit: {0}, {1} GB\n\n{2}"
