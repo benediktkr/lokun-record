@@ -299,7 +299,7 @@ def putnode(name):
             max_t = int(request.forms.max_throughput or 0)
             node = model.Node.new(name, request.forms["ip"], is_exit, max_t)
             apikey = model.APIKey.new(name, status="new")
-            log("Created a new node. API key status set to 'new'")
+            log("Created a new node: {0}. API key status set to 'new'".format(name))
             return dict({'secret': apikey.key}, **dict(node))
         except ValueError as e:
             errstatus(e)
