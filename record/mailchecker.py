@@ -39,7 +39,7 @@ def check(user, passwd):
         try:
             b = Bankmail(mail)
             # .new() calls .save() :(
-            Deposit.new(b.username, b.amount, "Wire", deposit=True)
+            Deposit.new(b.username, b.amount, "Wire", deposit=True, vsk=25.5)
             logger.email("Username: {username}\nAmount: {amount}".format(**b.__dict__))
         except NotBankmail as notb:
             log("Skipping {0}: {1}".format(mailid, str(notb)))
