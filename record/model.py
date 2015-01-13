@@ -305,9 +305,9 @@ class Exit(object):
 class Deposit(object):
     def __init__(self, **kwargs):
         # We creating a new Deposit, the depositid is not known (db autoincrement)
+        self.username = None # backwards comptability for unit tests
         self.depositid = kwargs.get('depositid', 0)
         self.date = kwargs.get('date', date.today().isoformat())
-        self.username = kwargs.get('username', '')
         self.amount = int(kwargs.get('amount'))
         self.method = kwargs.get('method', '')
         self.vsk = kwargs.get('vsk', 0.0)  # percentage
@@ -326,8 +326,8 @@ class Deposit(object):
         return "INVLOK" + str(self.depositid).zfill(5)
 
     def mkinvoice(self):
-        fields = [("account", self.username),
-                  ("date", self.date),
+        fields = [("date", self.date),
+                  # ("account", self.username),  # Sorry, PFS! 
                   ("number", self.invoice),
                   ("method", self.method),
                   ("amount", str(self.amount) + " ISK"),
@@ -366,8 +366,8 @@ class Deposit(object):
         if not user:
             raise ValueError("Unknown username: {0}".format(username))
         # depositid not known until saved
-        newdep = cls(amount=amount, username=username, method=method, vsk=vsk,
-                     date=_date, fees=fees)
+        newdep = cls(amount=amount, method=method, vsk=vsk, date=_date,
+                     fees=fees)
         newdep.save()
         if deposit:
             user.deposit(amount)
@@ -380,7 +380,7 @@ class Deposit(object):
     def get(cls, depositid):
         row = DB.get().select_deposit(depositid)
         
-        return cls(depositid=row[0], invoice=row[1], date=row[2], username=row[3],
+        return cls(depositid=row[0], invoice=row[1], date=row[2], 
                    amount=row[4], method=row[5], vsk=row[6], fees=row[7])
             
 

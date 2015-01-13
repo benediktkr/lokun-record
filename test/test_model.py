@@ -380,6 +380,16 @@ class TestDeposit(unittest.TestCase):
         model.Deposit.new("validuser", 2000, "testdeposit")
         self.assertEquals(old_credit_isk + 2000, model.User.get("validuser").credit_isk)
 
+    def test_deposit_does_not_reference_username(self):
+        # the test above checks that the user actually gets their money
+        user = model.User.get("validuser")
+        dep = model.Deposit.new(user.username, 2000, "testdeposit")
+        # now lets check the deposit does map to a user
+        dep2 = model.Deposit.get(dep.depositid)
+        self.assertTrue(dep2.username != user.username)
+        self.assertTrue(dep2.username == None)
+        
+
     def test_rowid_autoincrement(self):
         dep1 = model.Deposit.new("validuser", 1000, "testdeposit")
         dep2 = model.Deposit.new("validuser", 1000, "testdeposit")
