@@ -305,9 +305,9 @@ class Exit(object):
 class Deposit(object):
     def __init__(self, **kwargs):
         # We creating a new Deposit, the depositid is not known (db autoincrement)
-        self.username = None # backwards comptability for unit tests
         self.depositid = kwargs.get('depositid', 0)
         self.date = kwargs.get('date', date.today().isoformat())
+        self.username = None # backwards comptability for unit tests
         self.amount = int(kwargs.get('amount'))
         self.method = kwargs.get('method', '')
         self.vsk = kwargs.get('vsk', 0.0)  # percentage
