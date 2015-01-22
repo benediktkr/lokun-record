@@ -6,7 +6,7 @@ from status import StatusState
 from common.logger import Logger
 from time import time
 
-logger = Logger("monitor", mailfrom="lokun@sudo.is")
+logger = Logger("monitor", mailfrom="lokun@sudo.is")g
 errors = []
 vpndown = []
 empty = []
@@ -21,12 +21,12 @@ def main():
         faulty = [a for a in state.systems if state.systems[a] != "green"]
         logger.email("\n".join(state.description),
                      subject="{0} Lokun: {1}".format(status, faulty))
-    if time() % 360 < 5:
-        nodes = model.NodeList.alive()
-        counts, bw = map(sum, zip(*[(a.usercount, a.throughput) for a in nodes]))
-        
-        logger.log("Usercount: " + str(counts))
-        logger.log("Bandwidth usage: {0:.2f}  mb/s".format(bw / 1000000.))
+
+    nodes = model.NodeList.alive()
+    counts, bw = map(sum, zip(*[(a.usercount, a.throughput) for a in nodes]))
+    
+    logger.log("Usercount: " + str(counts))
+    logger.log("Bandwidth usage: {0:.2f}  mb/s".format(bw / 1000000.))
 
 if __name__ == "__main__":
     main()
