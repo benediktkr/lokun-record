@@ -6,7 +6,7 @@ from status import StatusState
 from common.logger import Logger
 from time import time
 
-logger = Logger("monitor", mailfrom="lokun@sudo.is")g
+logger = Logger("monitor", mailfrom="lokun@sudo.is")
 errors = []
 vpndown = []
 empty = []
