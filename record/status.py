@@ -76,9 +76,6 @@ class StatusState(object):
         except IOError:
             pass
 
-
-def set_currentstatus(status):
-
 class WWWErrors(StatusState):
     @classmethod
     def check(cls):
