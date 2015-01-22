@@ -14,15 +14,19 @@ status = "green"
 
 def main():
     state = StatusState.check()
-    if time() % 3600 < 5:
-        counts = [a.usercount for a in model.NodeList.enabled()]
-        logger.log("Usercount: " + str(sum(counts)))
-    if state.status != "green":
+    if state.changed:
+        state.save()
         # a systems property would be really nice
         status = state.status.upper()
         faulty = [a for a in state.systems if state.systems[a] != "green"]
         logger.email("\n".join(state.description),
                      subject="{0} Lokun: {1}".format(status, faulty))
+
+    nodes = model.NodeList.alive()
+    counts, bw = map(sum, zip(*[(a.usercount, a.throughput) for a in nodes]))
+    
+    logger.log("Usercount: " + str(counts))
+    logger.log("Bandwidth usage: {0:.2f}  mb/s".format(bw / 1000000.))
 
 if __name__ == "__main__":
     main()

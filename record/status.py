@@ -4,8 +4,9 @@ import socket
 
 from requests import get as httpget
 
-"""This seemed like a good idea at the time..."""
+statusfile = "/srv/log/statusfile.txt"
 
+"""This seemed like a good idea at the time..."""
 class Status(str):
     statusmap = {'green': 0, 'yellow': 1, 'red': 2}
 
@@ -57,6 +58,23 @@ class StatusState(object):
         desc = reduce(lambda x, y: x+y, [a.description for a in checks])
         systems = {c.name: c.status for c in checks}
         return cls(status, desc, systems)
+        
+    @property
+    def changed(self):
+        try:
+            with open(statusfile, 'r') as f:
+                return f.read().strip()
+        except IOError:
+            # Catching IOError so a filesystem error doesn't
+            # silently disable the monitor
+            return StatusState("green")
+
+    def save(self):
+        try:
+            with open(statusfile, 'w') as f:
+                f.write(status)
+        except IOError:
+            pass
 
 class WWWErrors(StatusState):
     @classmethod
