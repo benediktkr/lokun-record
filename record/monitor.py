@@ -38,8 +38,11 @@ def main():
         # a systems property would be really nice
         status = state.status.upper()
         faulty = [a for a in state.systems if state.systems[a] != "green"]
-        logger.email("\n".join(state.description),
-                     subject="{0} Lokun: {1}".format(status, faulty))
+        if state.status  == "green":
+            logger.email("GREEN", subject="GREEN Lokun")
+        else:
+            logger.email("\n".join(state.description),
+                         subject="{0} Lokun: {1}".format(status, faulty))
 
     nodes = model.NodeList.alive()
     counts, bw = map(sum, zip(*[(a.usercount, a.throughput) for a in nodes]))

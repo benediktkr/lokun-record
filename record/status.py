@@ -11,7 +11,10 @@ class Status(str):
     statusmap = {'green': 0, 'yellow': 1, 'red': 2}
 
     def __eq__(self, other):
-        return self.statusmap[str(self)] == self.statusmap[str(other)]
+        try:
+            return self.statusmap[str(self)] == self.statusmap[str(other)]
+        except KeyError:
+            return False
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -63,17 +66,17 @@ class StatusState(object):
     def changed(self):
         try:
             with open(statusfile, 'r') as f:
-                return f.read().strip()
-        except IOError:
+                return f.read().strip()[:] != self.status
+        except IOError as ex:
             # Catching IOError so a filesystem error doesn't
             # silently disable the monitor
-            return StatusState("green")
+            return "green" == self.status
 
     def save(self):
         try:
             with open(statusfile, 'w') as f:
-                f.write(status)
-        except IOError:
+                f.write(str(self.status))
+        except IOError as ex:
             pass
 
 class WWWErrors(StatusState):
