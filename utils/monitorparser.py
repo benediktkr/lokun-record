@@ -48,7 +48,7 @@ if __name__ == "__main__":
                 bw = 0
             pre.append((ts, usercount, bw))
 
-
+    print "done, count:", len(monitor)
     print "rrdtool..."
     for value in pre:
         rrdupdate(*value)
