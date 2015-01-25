@@ -356,15 +356,10 @@ def status():
     return {'status': state.status,
             'systems': state.systems}
 
-@post('/lokun/rrdgraph/<name>')
+@post('/lokun/rrdgraph/<name>_graph.png')
 def rrdgraph():
     key_auth()
-    if not request.forms.period:
-        period = "24h"
-    else:
-        period = request.forms.period[:]
-
-    return static_file(name + period + '_graph.png',
+    return static_file(name + '_graph.png',
                        root=config.rrdroot,
                        mimetype='image/png')
 
