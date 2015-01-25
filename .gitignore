@@ -90,7 +90,7 @@ keyfile.txt
 *.old
 
 # rrd things
-/utils/*.png
+/rrd/*.png
 *.rrd
 monitor_db.rrd*
 monitor.log
