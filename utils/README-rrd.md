@@ -6,7 +6,11 @@
 2. Create database with
    
     ```
-    $ rrdtool create monitor_db.rrd --step 900 DS:bandwidth:GAUGE:3600:0:1000 DS:usercount:GAUGE:4000:0:1000 RRA:MAX:0.5:1:140160
+    $ rrdtool create monitor_db.rrd \
+          --step 900 \
+          DS:bandwidth:GAUGE:3600:0:1000 \
+          DS:usercount:GAUGE:4000:0:1000 \
+          RRA:MAX:0.5:1:140160
     $
     ```
 
