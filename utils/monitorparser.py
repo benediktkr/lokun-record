@@ -2,6 +2,7 @@ from datetime import datetime
 from time import mktime
 from commands import getoutput
 from collections import defaultdict
+import sys
 
 def getdate(line):
     return line.split('\t')[0]
@@ -13,7 +14,7 @@ def gettimestamp(date):
 def rrdupdate(ts, usercount, bw):
     rrdupdate = "rrdtool update monitor_db.rrd --template bandwidth:usercount {0}:{1}:{2}"
     r = rrdupdate.format(ts, bw, usercount) 
-    #print r
+    if "-v" in sys.argv: print r
     rrd = getoutput(r)
     if rrd.startswith("ERROR"):
         print rrd
@@ -50,6 +51,7 @@ if __name__ == "__main__":
 
     print "done, count:", len(monitor)
     print "rrdtool..."
+    sys.exit()
     for value in pre:
         rrdupdate(*value)
-        
+    print "done."
