@@ -359,6 +359,7 @@ def status():
 @post('/lokun/rrdgraph/<name>_graph.png')
 def rrdgraph(name):
     key_auth()
+    # bottle handles 404 automatically
     return static_file(name + '_graph.png',
                        root=config.rrdroot,
                        mimetype='image/png')
