@@ -87,3 +87,10 @@ tramp
 
 # lokun
 keyfile.txt
+*.old
+
+# rrd things
+/rrd/*.png
+*.rrd
+monitor_db.rrd*
+monitor.log
