@@ -357,7 +357,7 @@ def status():
             'systems': state.systems}
 
 @post('/lokun/rrdgraph/<name>')
-def rrdgraph:
+def rrdgraph():
     key_auth()
     if not request.forms.period:
         period = "24h"
