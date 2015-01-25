@@ -55,3 +55,5 @@ dalpay_return = "<!-- success -->"
 
 reikningar_path = "/home/benedikt/devroot/reikningar/invoices"
 reikningar_template = "/home/benedikt/devroot/reikningar/reikningar_template.pdf"
+
+rrdroot = "/home/benedikt/projects/lokun-record/rrd"

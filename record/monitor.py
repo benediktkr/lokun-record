@@ -55,7 +55,7 @@ def main():
     if rrd.startswith("ERROR"):
         logger.log("rrdtool update: " + rrd)
     graphs = creategraphs()
-    if "error" in graphs:
+    if "ERROR" in graphs:
         logger.log("rrdtool graph: " + graph)
 
 if __name__ == "__main__":

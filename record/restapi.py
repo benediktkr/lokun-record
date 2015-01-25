@@ -72,11 +72,6 @@ def key_auth(name=""):
     except ValueError as e:
         abort(403, "Secret not accepted")    
 
-@get('/foo')
-def foo():
-    print request.headers
-    print request.headers.get('Bar')
-
 # ------------
 # /users/
 # ------------
@@ -325,7 +320,6 @@ def getexit(name):
 # ---------------
 # /lokun/
 # ---------------
-
 @get('/lokun/loadbalancer')
 def loadbalancer():
     try:
@@ -361,6 +355,15 @@ def status():
     state = StatusState.check()
     return {'status': state.status,
             'systems': state.systems}
+
+@post('/lokun/rrdgraph/<name>_graph.png')
+def rrdgraph():
+    key_auth()
+    return static_file(name + '_graph.png',
+                       root=config.rrdroot,
+                       mimetype='image/png')
+
+
 # -----------------
 # /callbacks
 # -----------------
