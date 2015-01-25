@@ -51,7 +51,6 @@ if __name__ == "__main__":
 
     print "done, count:", len(monitor)
     print "rrdtool..."
-    sys.exit()
     for value in pre:
         rrdupdate(*value)
     print "done."
