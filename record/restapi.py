@@ -357,7 +357,7 @@ def status():
             'systems': state.systems}
 
 @post('/lokun/rrdgraph/<name>_graph.png')
-def rrdgraph():
+def rrdgraph(name):
     key_auth()
     return static_file(name + '_graph.png',
                        root=config.rrdroot,
