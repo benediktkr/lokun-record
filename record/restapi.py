@@ -96,6 +96,9 @@ def putuser(name):
                                   request.forms.invite_key,
                                   email=request.forms.email)
             log("Created a new user")
+            # temporarily added for fun and profit
+            if request.forms.invite_key == "FOSDEM2015":
+                logger.email("FOSDEM user registered")
         except ValueError as e:
             errstatus(e)
             log(str(e))
