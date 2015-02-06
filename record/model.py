@@ -158,7 +158,7 @@ class Node(object):
         if not self.max_throughput:
             return False
         else:
-            return self.total_throughput > self.throughput_limit
+            return self.total_throughput >= self.throughput_limit
 
     @property
     def score(self):
