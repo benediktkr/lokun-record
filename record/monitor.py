@@ -40,16 +40,6 @@ def main():
     elif state.get_count() % 16 == 0:
         send_report(state, False)
 
-
-def send_report(state, email_on_green=False):
-        status = state.status.upper()
-        faulty = [a for a in state.systems if state.systems[a] != "green"]
-        if state.status  == "green":
-            logger.email("GREEN", subject="GREEN Lokun")
-        else:
-            logger.email("\n".join(state.description),
-                         subject="{0} Lokun: {1}".format(status, faulty))
-
     nodes = model.NodeList.alive()
     counts, bw = map(sum, zip(*[(a.usercount, a.throughput) for a in nodes]))
     s_bw = "{0:.2f}".format(bw / 1000000.)
@@ -63,6 +53,17 @@ def send_report(state, email_on_green=False):
     graphs = creategraphs()
     if "ERROR" in graphs:
         logger.log("rrdtool graph: " + graph)
+
+
+
+def send_report(state, email_on_green=False):
+        status = state.status.upper()
+        faulty = [a for a in state.systems if state.systems[a] != "green"]
+        if state.status  == "green":
+            logger.email("GREEN", subject="GREEN Lokun")
+        else:
+            logger.email("\n".join(state.description),
+                         subject="{0} Lokun: {1}".format(status, faulty))
 
 if __name__ == "__main__":
     main()
