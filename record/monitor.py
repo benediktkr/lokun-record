@@ -33,8 +33,8 @@ def creategraphs():
 
 def main():
     state = StatusState.check()
+    state.save()
     if state.changed:
-        state.save()
         # a systems property would be really nice
         send_report(state, True)
     elif state.get_count() % 16 == 0:

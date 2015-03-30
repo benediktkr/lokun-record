@@ -75,13 +75,14 @@ class StatusState(object):
 
     def get_count(self):
         with open(statusfile, 'r') as f:
-            return int(f.read().strip().split(":")[1])
+            contents = f.read()
+            return int(contents.strip().split(":")[1])
 
     def save(self):
         try:
             count = self.get_count()+1
             with open(statusfile, 'w') as f:
-                f.write(str(self.status) + ":" + count)
+                f.write(str(self.status) + ":" + str(count))
         except IOError as ex:
             pass
 
