@@ -36,6 +36,12 @@ def main():
     if state.changed:
         state.save()
         # a systems property would be really nice
+        send_report(state, True)
+    elif state.get_count() % 16 == 0:
+        send_report(state, False)
+
+
+def send_report(state, email_on_green=False):
         status = state.status.upper()
         faulty = [a for a in state.systems if state.systems[a] != "green"]
         if state.status  == "green":

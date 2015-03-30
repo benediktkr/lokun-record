@@ -66,16 +66,22 @@ class StatusState(object):
     def changed(self):
         try:
             with open(statusfile, 'r') as f:
-                return f.read().strip()[:] != self.status
+                savedstatus = f.read().strip().split(":")[0][:]
+                return savedstatus != self.status
         except IOError as ex:
             # Catching IOError so a filesystem error doesn't
             # silently disable the monitor
             return "green" == self.status
 
+    def get_count(self):
+        with open(statusfile, 'r') as f:
+            count = int(f.read().strip().split(":")[1])
+
     def save(self):
         try:
+            count = self.get_count()+1
             with open(statusfile, 'w') as f:
-                f.write(str(self.status))
+                f.write(str(self.status) + ":" count)
         except IOError as ex:
             pass
 
