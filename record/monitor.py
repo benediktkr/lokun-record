@@ -1,7 +1,6 @@
+#!/usr/bin/python2.7
+
 import model
-import smtplib
-from email.mime.text import MIMEText
-import socket
 from status import StatusState
 from common.logger import Logger
 from time import time
@@ -52,9 +51,7 @@ def main():
         logger.log("rrdtool update: " + rrd)
     graphs = creategraphs()
     if "ERROR" in graphs:
-        logger.log("rrdtool graph: " + graph)
-
-
+        logger.log("rrdtool graph: " + rrd)
 
 def send_report(state, email_on_green=False):
         status = state.status.upper()
