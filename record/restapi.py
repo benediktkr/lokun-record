@@ -1,24 +1,17 @@
 #! /usr/bin/env python2
 # coding: utf8
-import os
 import json
-import time 
-from math import ceil
 from pprint import pformat
 
 import bottle
-from bottle import route, request, response, put, post, get, HTTPError, hook
-from bottle import run, app, static_file, redirect
-from random import shuffle, sample
-from datetime import datetime
+from bottle import route, request, response, put, post, get, hook
+from bottle import run, static_file, redirect
+
 import hashlib
 
 import config
 import model
 import exchanges
-import requests
-import hashing
-import encryption
 import sec
 from common.logger import Logger
 from dalpay import DalPay
@@ -69,7 +62,7 @@ def key_auth(name=""):
         abort(401, "Must include a secret")
     try:
         return model.APIKey.auth(request.forms['secret'], name=name)
-    except ValueError as e:
+    except ValueError:
         abort(403, "Secret not accepted")    
 
 # ------------
@@ -395,8 +388,8 @@ def dalpay():
         cardtype = request.forms["pay_type"]
         fees = calculate_fees(cardtype, dalpay.amount)
 
-        deposit = model.Deposit.new(dalpay.username, dalpay.amount, cardtype,
-                                    vsk=25.5, fees=fees, deposit=True)
+        model.Deposit.new(dalpay.username, dalpay.amount, cardtype,
+                          vsk=25.5, fees=fees, deposit=True)
 
         logger.email("DalPay: {0},{1}".format(dalpay.username, dalpay.amount))
 
@@ -437,7 +430,6 @@ def bitcoinmonitor():
         log("signatures do not match")
         abort(403, "Unahtorized")
 
-    db = model.DB.get()
     b = model.BTCAddr.get(f['signed_data']['address'])
     if not b:
         abort(400, "Invalid") 
