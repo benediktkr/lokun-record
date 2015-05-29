@@ -32,12 +32,14 @@ def creategraphs():
 
 def main():
     state = StatusState.check()
-    state.save()
     if state.changed:
         # a systems property would be really nice
+        state.count = 0
         send_report(state, True)
     elif state.get_count() % 16 == 0:
         send_report(state, False)
+
+    state.save()
 
     nodes = model.NodeList.alive()
     counts, bw = map(sum, zip(*[(a.usercount, a.throughput) for a in nodes]))
@@ -54,13 +56,12 @@ def main():
         logger.log("rrdtool graph: " + rrd)
 
 def send_report(state, email_on_green=False):
-        status = state.status.upper()
-        faulty = [a for a in state.systems if state.systems[a] != "green"]
-        if state.status  == "green":
-            logger.email("GREEN", subject="GREEN Lokun")
-        else:
-            logger.email("\n".join(state.description),
-                         subject="{0} Lokun: {1}".format(status, faulty))
-
+    status = state.status.upper()
+    faulty = [a for a in state.systems if state.systems[a] != "green"]
+    if email_on_green and state.status  == "green":
+        logger.email("GREEN", subject="GREEN Lokun")
+    else:
+        logger.email("\n".join(state.description),
+                     subject="{0} Lokun: {1}".format(status, faulty))
 if __name__ == "__main__":
     main()
