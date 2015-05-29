@@ -34,7 +34,7 @@ def main():
     state = StatusState.check()
     if state.changed:
         # a systems property would be really nice
-        state.count = 0
+        state.age = 0
         send_report(state, True)
     elif state.get_count() % 16 == 0:
         send_report(state, False)
