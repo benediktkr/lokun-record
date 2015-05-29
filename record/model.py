@@ -97,7 +97,7 @@ class Node(object):
 
     @classmethod
     def auth(cls, name, key):
-        apikey = APIKey.auth(key, name=name)
+        APIKey.auth(key, name=name)
         node = cls.get(name)
         if not node:
             raise ValueError("Not a VPN server")
@@ -607,7 +607,7 @@ class BTCAddr(object):
         self.usertag = usertag
 
     @classmethod
-    def save(cls):
+    def save(self):
         DB.get().save_btcaddrs(self.addr, self.usertag)
 
     @classmethod
