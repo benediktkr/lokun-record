@@ -36,7 +36,7 @@ def main():
         # a systems property would be really nice
         state.age = 0
         send_report(state, True)
-    elif state.get_count() % 16 == 0:
+    elif state.age % 16 == 0:
         send_report(state, False)
 
     state.save()
@@ -58,8 +58,9 @@ def main():
 def send_report(state, email_on_green=False):
     status = state.status.upper()
     faulty = [a for a in state.systems if state.systems[a] != "green"]
-    if email_on_green and state.status  == "green":
-        logger.email("GREEN", subject="GREEN Lokun")
+    if state.status  == "green":
+        if email_on_green:
+            logger.email("GREEN", subject="GREEN Lokun")
     else:
         logger.email(str(state.age) + "\n" + "\n".join(state.description),
                      subject="{0} Lokun: {1}".format(status, faulty))
