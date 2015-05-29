@@ -61,7 +61,7 @@ def send_report(state, email_on_green=False):
     if email_on_green and state.status  == "green":
         logger.email("GREEN", subject="GREEN Lokun")
     else:
-        logger.email("\n".join(state.description),
+        logger.email(str(state.age) + "\n" + "\n".join(state.description),
                      subject="{0} Lokun: {1}".format(status, faulty))
 if __name__ == "__main__":
     main()
