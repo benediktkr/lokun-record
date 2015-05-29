@@ -39,12 +39,13 @@ class Status(str):
 
 
 class StatusState(object):
-    def __init__(self, status, description=[], systems={}):
+    def __init__(self, status, description=[], systems={}, age=0):
         self.status = Status(status)
         if type(description) == str:
             description = [description]
         self.description = description
         self.systems = systems
+        self.age = age
 
     @property
     def name(self):
@@ -60,32 +61,27 @@ class StatusState(object):
         status = max(c.status for c in checks)
         desc = reduce(lambda x, y: x+y, [a.description for a in checks])
         systems = {c.name: c.status for c in checks}
-        return cls(status, desc, systems)
-        
+        age = cls.get_status_age()
+        return cls(status, desc, systems, age)
+
+    # will fail on IOError, trust cron to deliver error
     @property
     def changed(self):
-        try:
-            with open(statusfile, 'r') as f:
-                savedstatus = f.read().strip().split(":")[0][:]
-                return savedstatus != self.status
-        except IOError as ex:
-            # Catching IOError so a filesystem error doesn't
-            # silently disable the monitor
-            return "green" == self.status
-
-    def get_count(self):
+        with open(statusfile, 'r') as f:
+            savedstatus = f.read().strip().split(":")[0][:]
+            return savedstatus != self.status
+        
+    def save(self):
+        self.age += 1
+        with open(statusfile, 'w') as f:
+            f.write(str(self.status) + ":" + str(self.age))
+            
+    def get_status_age():
         with open(statusfile, 'r') as f:
             contents = f.read()
             return int(contents.strip().split(":")[1])
 
-    def save(self):
-        try:
-            count = self.get_count()+1
-            with open(statusfile, 'w') as f:
-                f.write(str(self.status) + ":" + str(count))
-        except IOError as ex:
-            pass
-
+            
 class WWWErrors(StatusState):
     @classmethod
     def check(cls):
