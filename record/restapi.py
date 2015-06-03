@@ -64,7 +64,7 @@ def key_auth(name=""):
     try:
         return model.APIKey.auth(request.forms['secret'], name=name)
     except ValueError:
-        log(name + " failed auth")
+        log("Not accepted: " + repr(request.forms['secret']))
         abort(403, "Secret not accepted")    
 
 # ------------
