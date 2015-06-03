@@ -45,8 +45,11 @@ def main():
     counts, bw = map(sum, zip(*[(a.usercount, a.throughput) for a in nodes]))
     s_bw = "{0:.2f}".format(bw / 1000000.)
 
+    total_gb = sum([a.total_throughput for a in model.NodeList.enabled()])
+    
     logger.log("Usercount: " + str(counts))
     logger.log("Bandwidth usage: {0} mb/s".format(s_bw))
+    logger.log("Monthly total: " + str(total_gb) + " GB")
 
     rrd = rrdupdate(time(), counts, s_bw)
     if rrd.startswith("ERROR"):
