@@ -43,6 +43,7 @@ def errstatus(e, alternative=400):
 
 def abort(status, text):
     """Like bottle.abort but json."""
+    log(str(status) + ": " + text)
     r = bottle.HTTPResponse(json.dumps({'error': text, 'status': status}))
     r.content_type = 'application/json'
     r.status = status
@@ -63,6 +64,7 @@ def key_auth(name=""):
     try:
         return model.APIKey.auth(request.forms['secret'], name=name)
     except ValueError:
+        log("Not accepted: " + repr(request.forms['secret']))
         abort(403, "Secret not accepted")    
 
 # ------------
