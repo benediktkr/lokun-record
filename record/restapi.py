@@ -176,7 +176,8 @@ def vpn_sub(name):
         extra = 0
 
     if user.sub_active and user.dl_left > extra:
-        log("VPN access granted for a user on ({0})".format(keyinfo.name))
+        if name != "crontest":
+            log("VPN access granted for a user on ({0})".format(keyinfo.name))
         return {'sub_status': 'True',
                 'updated': 'False'}
     try:
