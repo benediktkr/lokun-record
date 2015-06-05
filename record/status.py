@@ -75,8 +75,9 @@ class StatusState(object):
         self.age += 1
         with open(statusfile, 'w') as f:
             f.write(str(self.status) + ":" + str(self.age))
-            
-    def get_status_age():
+
+    @classmethod
+    def get_status_age(cls):
         with open(statusfile, 'r') as f:
             contents = f.read()
             return int(contents.strip().split(":")[1])

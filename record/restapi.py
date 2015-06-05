@@ -92,8 +92,8 @@ def putuser(name):
                                   email=request.forms.email)
             log("Created a new user")
             # temporarily added for fun and profit
-            if request.forms.invite_key == "FOSDEM2015":
-                logger.email("FOSDEM user registered")
+            if request.forms.invite_key:
+                logger.email("Invite key used: " + request.forms.invite_key)
         except ValueError as e:
             errstatus(e)
             log(str(e))
@@ -110,7 +110,7 @@ def getuser(name):
 
 @put('/users/<name>/credit_isk')
 def putisk(name):
-    #key_auth("billing")
+    key_auth("billing")
     if 'isk' not in request.forms:
         abort(400, "Must include 'isk'")
     try:
