@@ -521,7 +521,7 @@ class User(object):
         if invkey:
             invkey = InviteKey(invkey)
             if invkey.promo_key:
-                newuser.dl_left = SUB_DL_BYTES/1000/1000/1000
+                newuser.dl_left = SUB_DL_BYTES/100
                 sub_end_date = date.today() + timedelta(1)
                 newuser.sub_end = sub_end_date.isoformat()
             else:
