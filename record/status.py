@@ -6,10 +6,8 @@ import requests
 try: requests.packages.urllib3.disable_warnings()
 except AttributeError: pass
 
-from dns import resolver
-    
 statusfile = "/srv/log/statusfile.txt"
-streaming_servers = [{'streaming1': '45.55.128.88'}]
+streaming_servers = [('streaming1', '45.55.128.88')]
 
 """This seemed like a good idea at the time..."""
 class Status(str):
@@ -139,7 +137,7 @@ class StreamingErrors(StatusState):
         errors = []
         for proxy in streaming_servers:
             try:
-                 json = requests.get("https://" + proxy + "-t.lokun.is/www-status",verify=False).json()
+                 json = requests.get("https://" + proxy[0] + "-t.lokun.is/www-status",verify=False).json()
                  assert json['status'] == "ok"
             except (requests.RequestException, AssertionError) as e:
                 errors.append(e.message)
@@ -152,6 +150,7 @@ class StreamingErrors(StatusState):
 DNSErrors should be doing this. Need to control in what order
 StatusState calls its inheriterees. 
 
+from dns import resolver
 class OverrideDNSError(StatusState):
     @classmethod
     def check(cls):
