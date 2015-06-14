@@ -100,7 +100,6 @@ class WWWErrors(StatusState):
             else:
                 return cls("red", "www: " + str(ex))
         return cls("green")
-
             
 class DNSErrors(StatusState):
     @classmethod
@@ -110,9 +109,9 @@ class DNSErrors(StatusState):
                 fqdn = host + "lokun.is"
                 socket.gethostbyname(fqdn)
             except socket.gaierror as ex:
+                # OK to stop on first error. 
                 return cls("red", "dns " + fqdn + ": " + str(ex))
-            return cls("green")
-
+        return cls("green")
             
 class StreamingErrors(StatusState):
     """Streaming servers are named streamingN.lokun.is. For every
