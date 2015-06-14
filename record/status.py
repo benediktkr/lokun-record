@@ -2,9 +2,14 @@
 import model
 import socket
 
-from requests import get as httpget
+import requests
+try: requests.packages.urllib3.disable_warnings()
+except AttributeError: pass
 
+from dns import resolver
+    
 statusfile = "/srv/log/statusfile.txt"
+streaming_servers = [{'streaming1': '45.55.128.88'}]
 
 """This seemed like a good idea at the time..."""
 class Status(str):
@@ -36,7 +41,6 @@ class Status(str):
     
     def __bool__(self):
         return self.statusmap[self] == 0
-
 
 class StatusState(object):
     def __init__(self, status, description=[], systems={}, age=0):
@@ -88,14 +92,16 @@ class WWWErrors(StatusState):
     def check(cls):
         try:
             # Also checks certificate
-            j = httpget("https://lokun.is/www-status", timeout=4.20).json()
+            j = requests.get("https://lokun.is/www-status", timeout=4.20).json()
             assert j['status'] == "ok"
-            return cls("green")
         except (AssertionError, Exception) as ex:
             if type(ex) is AssertionError:
                 return cls("red", 'www: /www-status != {"status": "ok"}')
-            return cls("red", "www: " + str(ex))
+            else:
+                return cls("red", "www: " + str(ex))
+        return cls("green")
 
+            
 class DNSErrors(StatusState):
     @classmethod
     def check(cls):
@@ -103,11 +109,54 @@ class DNSErrors(StatusState):
             try:
                 fqdn = host + "lokun.is"
                 socket.gethostbyname(fqdn)
-                return cls("green")
             except socket.gaierror as ex:
                 return cls("red", "dns " + fqdn + ": " + str(ex))
+            return cls("green")
 
+            
+class StreamingErrors(StatusState):
+    """Streaming servers are named streamingN.lokun.is. For every
+    streaming server, there also exists a dns record
+    streamingN-t.lokun.is, that resolves to the same IP address as
+    streamingN.lokun.is.
 
+    Then each streaming server has a record in /etc/hosts overriding
+    streamingN-t.lokun.is to resolv to the IP address for
+    www.lokun.is.
+
+    When this test queries https://streamingN-t.lokun.is, the
+    streaming server will proxy the request to www.lokun.is because of
+    the /etc/hosts entry.
+
+    It is favourable to edit /etc/hosts on the streaming server
+    because then the test fails if /etc/hosts fails.
+
+    The test then asserts a statement about the json, confirming that
+    it originated from www.lokun.is.
+
+    """
+    @classmethod
+    def check(cls):
+        for proxy in streaming_servers:
+            try:
+                 print requests.get("https://" + proxy + "-t.lokun.is/www-status",verify=False).text
+            except requests.RequestException as e:
+                print e.message
+                return cls("red", e.message)
+            return cls("green")
+
+"""class OverrideDNSError(StatusState):
+    @classmethod
+    def check(cls):
+
+        try:
+            ovrdns = [resolver.query(a, "A") for a in ['dns0.lokun.is', 'dns1.lokun.is']]
+        except resolver.NXDOMAIN:
+            return cls("red")
+        myresolver = resolver.Resolver()
+        myresolver.nameservers = ovrdns
+        print myresolver.nameservers"""     
+        
 class NodeErrors(StatusState):
     @classmethod
     def check(cls):
