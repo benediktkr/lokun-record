@@ -137,25 +137,35 @@ class StreamingErrors(StatusState):
     """
     @classmethod
     def check(cls):
+        errors = []
         for proxy in streaming_servers:
             try:
-                 print requests.get("https://" + proxy + "-t.lokun.is/www-status",verify=False).text
-            except requests.RequestException as e:
-                print e.message
-                return cls("red", e.message)
-            return cls("green")
+                 json = requests.get("https://" + proxy + "-t.lokun.is/www-status",verify=False).json()
+                 assert json['status'] == "ok"
+            except (requests.RequestException, AssertionError) as e:
+                errors.append(e.message)
 
-"""class OverrideDNSError(StatusState):
+        if len(errors) == 0:
+            return cls("green")
+        return cls("yellow" if len(errors) == 1 else "red", errors)
+
+"""This shouldnt be testing dns0.lokun.is and dns1.lokun.is,
+DNSErrors should be doing this. Need to control in what order
+StatusState calls its inheriterees. 
+
+class OverrideDNSError(StatusState):
     @classmethod
     def check(cls):
 
         try:
-            ovrdns = [resolver.query(a, "A") for a in ['dns0.lokun.is', 'dns1.lokun.is']]
+            ovrdns = [resolver.query(a, "A")[0].to_text() for a in ['dns0.lokun.is', 'dns1.lokun.is']]
         except resolver.NXDOMAIN:
             return cls("red")
         myresolver = resolver.Resolver()
         myresolver.nameservers = ovrdns
-        print myresolver.nameservers"""     
+        print myresolver.nameservers
+
+"""     
         
 class NodeErrors(StatusState):
     @classmethod
