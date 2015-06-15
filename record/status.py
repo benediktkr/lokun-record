@@ -137,10 +137,10 @@ class StreamingErrors(StatusState):
         errors = []
         for proxy in streaming_servers:
             try:
-                 json = requests.get("https://" + proxy[0] + "-t.lokun.is/www-status",verify=False).json()
+                 json = requests.get("https://" + proxy[0] + "-t.lokun.is/www-status",verify=False,timeout=.20).json()
                  assert json['status'] == "ok"
-            except (requests.RequestException, AssertionError) as e:
-                errors.append(e.message)
+            except Exception  as e:
+                errors.append(str(e))
 
         if len(errors) == 0:
             return cls("green")
