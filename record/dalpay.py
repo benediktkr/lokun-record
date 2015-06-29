@@ -14,7 +14,7 @@ class DalPay(object):
         self.pageid = kwargs.get("pageid", "01")
         self.key = kwargs.get('key', dalpay_aeskey)
         self.mer_id = "131201"
-        self.valute_code = "isk"
+        self.valuta_code = "isk"
         self.langcode = "en"
         self.posturl = "https://secure.dalpay.is/cgi-bin/order2/processorder1.pl"
 
