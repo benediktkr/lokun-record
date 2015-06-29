@@ -21,6 +21,10 @@ Python packages needed
  * `webtest`
  * `netaddr`
  * `fdfgen`
+ * `pyopenssl`
+ * `ndg-httpsclient`
+ * `pyasn1`
+ * `dnspython`
 
 Dependencies from apt:
 -----------------------------
@@ -31,6 +35,8 @@ Dependencies from apt:
  * `python-dev`
  * `build-essentials`
  * `pdftk` 
+ * `libffi-dev`
+ * `libssl-dev`
 
 DalPay crypto protocol
 ======

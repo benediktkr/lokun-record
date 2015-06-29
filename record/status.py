@@ -2,9 +2,12 @@
 import model
 import socket
 
-from requests import get as httpget
+import requests
+try: requests.packages.urllib3.disable_warnings()
+except AttributeError: pass
 
 statusfile = "/srv/log/statusfile.txt"
+streaming_servers = [('streaming1', '45.55.128.88')]
 
 """This seemed like a good idea at the time..."""
 class Status(str):
@@ -36,7 +39,6 @@ class Status(str):
     
     def __bool__(self):
         return self.statusmap[self] == 0
-
 
 class StatusState(object):
     def __init__(self, status, description=[], systems={}, age=0):
@@ -75,8 +77,9 @@ class StatusState(object):
         self.age += 1
         with open(statusfile, 'w') as f:
             f.write(str(self.status) + ":" + str(self.age))
-            
-    def get_status_age():
+
+    @classmethod
+    def get_status_age(cls):
         with open(statusfile, 'r') as f:
             contents = f.read()
             return int(contents.strip().split(":")[1])
@@ -87,14 +90,15 @@ class WWWErrors(StatusState):
     def check(cls):
         try:
             # Also checks certificate
-            j = httpget("https://lokun.is/www-status", timeout=4.20).json()
+            j = requests.get("https://lokun.is/www-status", timeout=4.20).json()
             assert j['status'] == "ok"
-            return cls("green")
         except (AssertionError, Exception) as ex:
             if type(ex) is AssertionError:
                 return cls("red", 'www: /www-status != {"status": "ok"}')
-            return cls("red", "www: " + str(ex))
-
+            else:
+                return cls("red", "www: " + str(ex))
+        return cls("green")
+            
 class DNSErrors(StatusState):
     @classmethod
     def check(cls):
@@ -102,11 +106,65 @@ class DNSErrors(StatusState):
             try:
                 fqdn = host + "lokun.is"
                 socket.gethostbyname(fqdn)
-                return cls("green")
             except socket.gaierror as ex:
+                # OK to stop on first error. 
                 return cls("red", "dns " + fqdn + ": " + str(ex))
+        return cls("green")
+            
+class StreamingErrors(StatusState):
+    """Streaming servers are named streamingN.lokun.is. For every
+    streaming server, there also exists a dns record
+    streamingN-t.lokun.is, that resolves to the same IP address as
+    streamingN.lokun.is.
 
+    Then each streaming server has a record in /etc/hosts overriding
+    streamingN-t.lokun.is to resolv to the IP address for
+    www.lokun.is.
 
+    When this test queries https://streamingN-t.lokun.is, the
+    streaming server will proxy the request to www.lokun.is because of
+    the /etc/hosts entry.
+
+    It is favourable to edit /etc/hosts on the streaming server
+    because then the test fails if /etc/hosts fails.
+
+    The test then asserts a statement about the json, confirming that
+    it originated from www.lokun.is.
+
+    """
+    @classmethod
+    def check(cls):
+        errors = []
+        for proxy in streaming_servers:
+            try:
+                 json = requests.get("https://" + proxy[0] + "-t.lokun.is/www-status",verify=False,timeout=.20).json()
+                 assert json['status'] == "ok"
+            except Exception  as e:
+                errors.append(str(e))
+
+        if len(errors) == 0:
+            return cls("green")
+        return cls("yellow" if len(errors) == 1 else "red", errors)
+
+"""This shouldnt be testing dns0.lokun.is and dns1.lokun.is,
+DNSErrors should be doing this. Need to control in what order
+StatusState calls its inheriterees. 
+
+from dns import resolver
+class OverrideDNSError(StatusState):
+    @classmethod
+    def check(cls):
+
+        try:
+            ovrdns = [resolver.query(a, "A")[0].to_text() for a in ['dns0.lokun.is', 'dns1.lokun.is']]
+        except resolver.NXDOMAIN:
+            return cls("red")
+        myresolver = resolver.Resolver()
+        myresolver.nameservers = ovrdns
+        print myresolver.nameservers
+
+"""     
+        
 class NodeErrors(StatusState):
     @classmethod
     def check(cls):

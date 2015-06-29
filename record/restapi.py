@@ -92,8 +92,8 @@ def putuser(name):
                                   email=request.forms.email)
             log("Created a new user")
             # temporarily added for fun and profit
-            if request.forms.invite_key == "FOSDEM2015":
-                logger.email("FOSDEM user registered")
+            if request.forms.invite_key:
+                logger.email("Invite key used: " + request.forms.invite_key)
         except ValueError as e:
             errstatus(e)
             log(str(e))
@@ -110,7 +110,7 @@ def getuser(name):
 
 @put('/users/<name>/credit_isk')
 def putisk(name):
-    #key_auth("billing")
+    key_auth("billing")
     if 'isk' not in request.forms:
         abort(400, "Must include 'isk'")
     try:
@@ -178,7 +178,8 @@ def vpn_sub(name):
         extra = 0
 
     if user.sub_active and user.dl_left > extra:
-        log("VPN access granted for a user on ({0})".format(keyinfo.name))
+        if name != "crontest":
+            log("VPN access granted for a user on ({0})".format(keyinfo.name))
         return {'sub_status': 'True',
                 'updated': 'False'}
     try:

@@ -521,8 +521,9 @@ class User(object):
         if invkey:
             invkey = InviteKey(invkey)
             if invkey.promo_key:
-                newuser.dl_left = SUB_DL_BYTES
-                newuser.sub_end = "2015-02-03"
+                newuser.dl_left = SUB_DL_BYTES/100
+                sub_end_date = date.today() + timedelta(1)
+                newuser.sub_end = sub_end_date.isoformat()
             else:
                 invkey.use()
         newuser.mkkeys()
@@ -582,7 +583,7 @@ class InviteKey(object):
 
     @property
     def promo_key(self):
-        return self.key in ["FOSDEM2015"]
+        return self.key in ["FOSDEM2015", "ALLSOP2015"]
 
 class BTCPrices(object):
     def __init__(self, price):
