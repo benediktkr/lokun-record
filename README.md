@@ -8,7 +8,22 @@ information is stored by us about our users).
 
 ![Lokun](logo.png)
 
-We believe in free software and thus `record` is licensed as AGPL. 
+We believe in free software and thus `record` is licensed as AGPL.
+
+Dependencies from apt:
+-----------------------------
+
+Install before pip packages. 
+
+ * `python`
+ * `python-pip`
+ * `nsis`
+ * `openssl` 
+ * `python-dev`
+ * `build-essentials`
+ * `pdftk` 
+ * `libffi-dev`
+ * `libssl-dev`
 
 Python packages needed
 ---------------------
@@ -26,17 +41,6 @@ Python packages needed
  * `pyasn1`
  * `dnspython`
 
-Dependencies from apt:
------------------------------
- * `python`
- * `python-pip`
- * `nsis`
- * `openssl` 
- * `python-dev`
- * `build-essentials`
- * `pdftk` 
- * `libffi-dev`
- * `libssl-dev`
 
 DalPay crypto protocol
 ======

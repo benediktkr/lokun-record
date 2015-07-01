@@ -117,19 +117,11 @@ class StreamingErrors(StatusState):
     streamingN-t.lokun.is, that resolves to the same IP address as
     streamingN.lokun.is.
 
-    Then each streaming server has a record in /etc/hosts overriding
-    streamingN-t.lokun.is to resolv to the IP address for
-    www.lokun.is.
-
-    When this test queries https://streamingN-t.lokun.is, the
-    streaming server will proxy the request to www.lokun.is because of
-    the /etc/hosts entry.
-
-    It is favourable to edit /etc/hosts on the streaming server
-    because then the test fails if /etc/hosts fails.
+    The streaming server is set to proxy requets for
+    streamingN-t.lokun.is to www.lokun.is.
 
     The test then asserts a statement about the json, confirming that
-    it originated from www.lokun.is.
+    it originated from www.lokun.is (same as WWWError(
 
     """
     @classmethod
@@ -137,8 +129,9 @@ class StreamingErrors(StatusState):
         errors = []
         for proxy in streaming_servers:
             try:
-                 json = requests.get("https://" + proxy[0] + "-t.lokun.is/www-status",verify=False,timeout=4.20).json()
-                 assert json['status'] == "ok"
+                url =  "https://" + proxy[0] + "-t.lokun.is/www-status"
+                json = requests.get(url,verify=False, timeout=4.20).json()
+                assert json['status'] == "ok"
             except Exception  as e:
                 errors.append(str(e))
 
@@ -184,7 +177,10 @@ class NodeErrors(StatusState):
 
 
 if __name__ == "__main__":
-    state = StatusState.check()
-    print state.systems
-    print state.status
-    print "\n".join(state.description)
+    #state = StatusState.check()
+    #print state.systems
+    #print state.status
+    #print "\n".join(state.description)
+    streaming = StreamingErrors.check()
+    print streaming.description
+    print streaming.status
