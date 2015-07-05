@@ -509,6 +509,7 @@ class User(object):
 
         Saves the new user to the database, creates a config.zip for him and
         an installer."""
+        raise ValueError("Registration is closed.")
         if DB.get().select_user(username):
             raise ValueError("Username already taken")
         if not good_username(username):
