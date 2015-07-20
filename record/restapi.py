@@ -6,6 +6,7 @@ from pprint import pformat
 import bottle
 from bottle import route, request, response, put, post, get, hook
 from bottle import run, static_file, redirect
+from wsgiproxy.app import WSGIProxyApp
 
 import hashlib
 
@@ -456,7 +457,14 @@ def bitcoinmonitor():
 def bitcoinmonitorcallback():
     return bitcoinmonitor()
 
+esproxyapp = WSGIProxyApp("http://localhost:9200/")
+
+def esproxy(environ, start_response):
+    key_auth("www")
+    return esproxyapp(environ, start_response)
+
 application = bottle.app()
+application.mount('/elasticsearch', esproxy)
 
 if __name__ == '__main__':
     run(host='0.0.0.0',
