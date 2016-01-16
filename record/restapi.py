@@ -416,7 +416,6 @@ def bitcoinmonitor():
     # There has to be a better way to get s_data..
     s_data = dict(request.forms).keys()[0]
     f = json.loads(s_data)
-    d = f['signed_data']
     log("addr: " + f['signed_data']['address'])
 
     concat = ""
@@ -434,11 +433,12 @@ def bitcoinmonitor():
     # why on earth whould you use md5 in a new project in 2013?
     signature = hashlib.md5(concat).hexdigest()
     if signature != f['signature']:
-        log("signatures do not match")
+        logger.email("signatures do not match")
         abort(403, "Unahtorized")
 
     b = model.BTCAddr.get(f['signed_data']['address'])
     if not b:
+        logger.email("bitcoin address not found")
         abort(400, "Invalid") 
 
     user = model.User.get(b.usertag)
