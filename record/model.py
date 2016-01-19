@@ -20,6 +20,10 @@ import sec
 #SUB_DL_BYTES = 1099511627776               
 SUB_DL_BYTES = 1000000000000
 SUB_LENGTH_DAYS = 30
+SUB_PRICE_DAYS = {
+    2000: 30,
+    500 :  1
+}
 # TODO: This variable now also exists in config
 SUB_PRICE_ISK = config.isk_price
 BW_MARGIN = 0.9
@@ -398,9 +402,13 @@ class User(object):
 
     @property
     def can_buy(self):
-        can_buy_isk = self.credit_isk >= SUB_PRICE_ISK
-        can_buy_btc = self.credit_btc >= exchanges.btc_price()
-        return can_buy_isk or can_buy_btc
+        # When implementing more payment options, this
+        # doesn't look like makes sense anymore.
+        #
+        #can_buy_isk = self.credit_isk >= SUB_PRICE_ISK
+        #can_buy_btc = self.credit_btc >= exchanges.btc_price()
+        #return can_buy_isk or can_buy_btc
+        return False
 
     @property
     def gb_left(self):
@@ -473,7 +481,7 @@ class User(object):
         This method returning without exceptions does not mean the installer was
         created. Since creating an installer takes around 10 seconds, another
         process is started for it. The only thing this method does is starting
-        that process and then returning without blocking.
+        /that process and then returning without blocking.
         """
         Popen([os.path.join(config.keycontrol_dir, 'mkinstaller.py'),
                config.installer_bdir,
