@@ -23,6 +23,7 @@ SUB_LENGTH_DAYS = 30
 # TODO: This variable now also exists in config
 SUB_PRICE_ISK = config.isk_price
 BW_MARGIN = 0.9
+REGISTRATION_CLOSED = False
 
 class NotEnoughFundsError(Exception):
     pass
@@ -394,6 +395,7 @@ class User(object):
         self.credit_isk = kwargs.get('credit_isk', 0)
         self.credit_btc = kwargs.get('credit_btc', 0)
         self.sub_end = kwargs.get('sub_end', "1971-04-20")
+        self.dns_user = kwargs.get('dns_user', False)
         self.db = db
 
     @property
@@ -426,7 +428,8 @@ class User(object):
 
     def save(self):
         self.db.save_user(self.username, self.hashed_passwd, self.email,
-                          self.dl_left, self.credit_isk, self.credit_btc, self.sub_end)
+                          self.dl_left, self.credit_isk, self.credit_btc,
+                          self.sub_end, self.dns_user)
 
     def deposit(self, amount):
         self.credit_isk += amount
@@ -509,7 +512,8 @@ class User(object):
 
         Saves the new user to the database, creates a config.zip for him and
         an installer."""
-        raise ValueError("Registration is closed.")
+        if REGISTRATION_CLOSED:
+            raise ValueError("Registration is closed.")
         if DB.get().select_user(username):
             raise ValueError("Username already taken")
         if not good_username(username):
@@ -545,7 +549,8 @@ class User(object):
         db = DB.get()
         row = db.select_user(username)
         return cls(row[0], row[1], db, email=row[2], dl_left=row[3],
-                   credit_isk=row[4], credit_btc=row[5], sub_end=row[6]) if row else False
+                   credit_isk=row[4], credit_btc=row[5], sub_end=row[6],
+                   dns_user=row[7]) if row else False
 
     def __iter__(self):
         attrs = []
@@ -768,13 +773,13 @@ class DB(object):
     def commit(self):
         self.conn.commit()
 
-    def save_user(self, username, hashed_passwd, email, dl_left, credit_isk, credit_btc, sub_end):
-        self.conn.execute("insert or replace into user values (?, ?, ?, ?, ?, ?, ?)",
-                         (username, hashed_passwd, email or '', dl_left, credit_isk, credit_btc, sub_end))
+    def save_user(self, username, hashed_passwd, email, dl_left, credit_isk, credit_btc, sub_end, dns_user):
+        self.conn.execute("insert or replace into user values (?, ?, ?, ?, ?, ?, ?, ?)",
+                         (username, hashed_passwd, email or '', dl_left, credit_isk, credit_btc, sub_end, dns_user))
         self.commit()
 
     def select_user(self, username):
-        c = self.conn.execute("""select username, hashed_passwd, email, dl_left, credit_isk, credit_btc, sub_end
+        c = self.conn.execute("""select username, hashed_passwd, email, dl_left, credit_isk, credit_btc, sub_end, dns_user
                                  from user where username=?""", (username,))
         return c.fetchone()
 
@@ -958,6 +963,7 @@ def mktables(conn):
                      dl_left integer not null,
                      credit_isk integer not null,
                      credit_btc real not null,
+                     dns_user boolean not null,
                      sub_end text not null)""")
     c.execute("""create table invitekey (key text primary key)""")
     # will be moved to lokun-billing
