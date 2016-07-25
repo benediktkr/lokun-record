@@ -25,14 +25,12 @@ def hash_sha512s(passwd, salt=None):
     hash_ = base64.b64encode(hash_)
     return 'sha512s$'+salt+'$'+hash_
 
-# Whyis this Base64(bytes) ... 
 def gen_salt(length=16):
     """Generates a base64 encoded pseudo-random string, secure enough for
        crypto use. Length is in bytes. Intended for generating salts, hence
        the name."""
     return base64.b64encode(os.urandom(length))
 
-# and this us .hexdigest() ?
 def gen_randhex_sha256():
     """Generates a printable pseudo-random string, secure enough for
        crypto use."""
